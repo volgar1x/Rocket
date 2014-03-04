@@ -17,3 +17,8 @@ subprojects {
         testCompile 'org.mockito:mockito-core:1.9.5'
     }
 }
+
+task wrapper(type: Wrapper) {
+    gradleVersion = '1.10'
+}
+
