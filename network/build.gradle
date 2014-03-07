@@ -1,0 +1,5 @@
+dependencies {
+    compile project(':api')
+
+    compile 'io.netty:netty-transport:4.0.17.Final'
+}

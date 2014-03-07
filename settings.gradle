@@ -1,1 +1,1 @@
-include 'api', 'cmd'
+include 'api', 'cmd', 'network'
