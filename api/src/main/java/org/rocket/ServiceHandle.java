@@ -18,7 +18,7 @@ public final class ServiceHandle implements AutoCloseable {
 	}
 
 	@Override
-	public void close() {
+	public void close() { // RAII ici
 		service.stop(ctx);
 	}
 }
