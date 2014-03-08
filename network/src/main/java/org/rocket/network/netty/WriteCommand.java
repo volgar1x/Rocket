@@ -17,17 +17,17 @@ public final class WriteCommand implements NetworkCommand {
 
 	@Override
 	public void now() {
-		channel.write(o).awaitUninterruptibly();
+		channel.writeAndFlush(o).awaitUninterruptibly();
 	}
 
 	@Override
 	public void now(Duration max) {
-		channel.write(o).awaitUninterruptibly(max.toMillis());
+		channel.writeAndFlush(o).awaitUninterruptibly(max.toMillis());
 	}
 
 	@Override
 	public void async() {
-		channel.write(o);
+		channel.writeAndFlush(o);
 	}
 
 	@Override
