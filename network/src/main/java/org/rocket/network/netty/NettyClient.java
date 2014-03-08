@@ -3,8 +3,10 @@ package org.rocket.network.netty;
 import io.netty.channel.socket.SocketChannel;
 import org.rocket.network.NetworkClient;
 import org.rocket.network.NetworkCommand;
+import org.rocket.network.Transactional;
 
 import java.util.Objects;
+import java.util.function.Consumer;
 
 public class NettyClient implements NetworkClient {
 	private final SocketChannel channel;
@@ -14,17 +16,22 @@ public class NettyClient implements NetworkClient {
 	}
 
 	@Override
-	public NetworkCommand write(Object o) {
+	public final NetworkCommand write(Object o) {
 		return new WriteCommand(channel, o);
 	}
 
 	@Override
-	public NetworkCommand close() {
+	public final NetworkCommand transaction(Consumer<Transactional> fn) {
+		return new TransactionCommand(channel, fn);
+	}
+
+	@Override
+	public final NetworkCommand close() {
 		return new CloseCommand(channel);
 	}
 
 	@Override
-	public NetworkCommand closeNow() { // not supported
+	public final NetworkCommand closeNow() {
 		return close();
 	}
 }
