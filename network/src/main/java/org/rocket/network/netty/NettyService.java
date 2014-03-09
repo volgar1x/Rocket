@@ -6,10 +6,12 @@ import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.util.AttributeKey;
+import net.engio.mbassy.bus.IMessageBus;
 import org.rocket.Service;
 import org.rocket.ServiceContext;
 import org.rocket.network.NetworkCommand;
 import org.rocket.network.NetworkService;
+import org.rocket.network.event.*;
 
 import java.time.Duration;
 import java.util.HashSet;
@@ -26,14 +28,16 @@ public class NettyService<C extends NettyClient> implements NetworkService<C> {
 
 	private final ServerBootstrap bootstrap;
 	private final EventLoopGroup boss, worker;
-	private final Set<C> clients = new HashSet<>();
 	private final Function<Channel, C> clientFactory;
+	private final IMessageBus<NetworkEvent<C>, ?> eventBus;
+	private final Set<C> clients = new HashSet<>();
 
 	private Optional<Channel> server;
 	private int maxConnectedClients;
 
-	public NettyService(Function<Channel, C> clientFactory, Consumer<Channel> initializer) {
+	public NettyService(Function<Channel, C> clientFactory, IMessageBus<NetworkEvent<C>, ?> eventBus, Consumer<Channel> initializer) {
 		this.clientFactory = clientFactory;
+		this.eventBus = eventBus;
 
 		this.boss   = new NioEventLoopGroup();
 		this.worker = new NioEventLoopGroup();
@@ -88,8 +92,9 @@ public class NettyService<C extends NettyClient> implements NetworkService<C> {
 		return ImmutableSet.copyOf(clients);
 	}
 
+	final AttributeKey<C> ATTR = AttributeKey.valueOf(Clients.class.getName() + ".ATTR");
+
 	class Clients extends ChannelInboundHandlerAdapter {
-		final AttributeKey<C> ATTR = AttributeKey.valueOf(Clients.class.getName() + ".ATTR");
 
 		@Override
 		public void channelActive(ChannelHandlerContext ctx) throws Exception {
@@ -117,22 +122,26 @@ public class NettyService<C extends NettyClient> implements NetworkService<C> {
 	class Dispatch extends ChannelInboundHandlerAdapter {
 		@Override
 		public void channelActive(ChannelHandlerContext ctx) throws Exception {
-
+			C client = ctx.attr(ATTR).get();
+			eventBus.post(new ConnectEvent<>(client)).now();
 		}
 
 		@Override
 		public void channelInactive(ChannelHandlerContext ctx) throws Exception {
-
+			C client = ctx.attr(ATTR).get();
+			eventBus.post(new DisconnectEvent<>(client)).now();
 		}
 
 		@Override
 		public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
-
+			C client = ctx.attr(ATTR).get();
+			eventBus.post(new ReceiveEvent<>(client, msg)).now();
 		}
 
 		@Override
 		public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
-
+			C client = ctx.attr(ATTR).get();
+			eventBus.post(new RecoverEvent<>(client, cause)).now();
 		}
 	}
 
