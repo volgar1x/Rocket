@@ -1,19 +1,21 @@
 package org.rocket.network.netty;
 
+import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.socket.SocketChannel;
 import org.rocket.network.NetworkCommand;
 import org.rocket.network.Transactional;
 
 import java.time.Duration;
+import java.util.Objects;
 import java.util.function.Consumer;
 
 public final class TransactionCommand implements NetworkCommand {
-	private final SocketChannel channel;
+	private final Channel channel;
 	private final Consumer<Transactional> transaction;
 
-	public TransactionCommand(SocketChannel channel, Consumer<Transactional> transaction) {
-		this.channel = channel;
+	public TransactionCommand(Channel channel, Consumer<Transactional> transaction) {
+		this.channel = Objects.requireNonNull(channel, "channel");
 		this.transaction = transaction;
 	}
 

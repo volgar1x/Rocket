@@ -1,5 +1,6 @@
 package org.rocket.network.netty;
 
+import io.netty.channel.Channel;
 import io.netty.channel.socket.SocketChannel;
 import org.rocket.network.NetworkClient;
 import org.rocket.network.NetworkCommand;
@@ -9,9 +10,9 @@ import java.util.Objects;
 import java.util.function.Consumer;
 
 public class NettyClient implements NetworkClient {
-	private final SocketChannel channel;
+	final Channel channel; // package-private to allow some optimizations
 
-	public NettyClient(SocketChannel channel) {
+	public NettyClient(Channel channel) {
 		this.channel = Objects.requireNonNull(channel, "channel");
 	}
 
@@ -33,5 +34,10 @@ public class NettyClient implements NetworkClient {
 	@Override
 	public final NetworkCommand closeNow() {
 		return close();
+	}
+
+	@Override
+	public String toString() {
+		return channel.toString();
 	}
 }

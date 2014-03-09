@@ -1,5 +1,6 @@
 package org.rocket.network.netty;
 
+import io.netty.channel.Channel;
 import io.netty.channel.socket.SocketChannel;
 import org.rocket.network.NetworkCommand;
 
@@ -7,9 +8,9 @@ import java.time.Duration;
 import java.util.Objects;
 
 public final class CloseCommand implements NetworkCommand {
-	private final SocketChannel channel;
+	private final Channel channel;
 
-	public CloseCommand(SocketChannel channel) {
+	public CloseCommand(Channel channel) {
 		this.channel = Objects.requireNonNull(channel, "channel");
 	}
 
