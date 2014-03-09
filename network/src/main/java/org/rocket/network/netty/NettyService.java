@@ -13,6 +13,7 @@ import org.rocket.network.NetworkCommand;
 import org.rocket.network.NetworkService;
 import org.rocket.network.event.*;
 
+import java.net.SocketAddress;
 import java.time.Duration;
 import java.util.HashSet;
 import java.util.List;
@@ -35,7 +36,7 @@ public class NettyService<C extends NettyClient> implements NetworkService<C> {
 	private Optional<Channel> server;
 	private int maxConnectedClients;
 
-	public NettyService(Function<Channel, C> clientFactory, IMessageBus<NetworkEvent<C>, ?> eventBus, Consumer<Channel> initializer) {
+	public NettyService(Function<Channel, C> clientFactory, IMessageBus<NetworkEvent<C>, ?> eventBus, Consumer<Channel> initializer, SocketAddress localAddr) {
 		this.clientFactory = clientFactory;
 		this.eventBus = eventBus;
 
@@ -43,6 +44,7 @@ public class NettyService<C extends NettyClient> implements NetworkService<C> {
 		this.worker = new NioEventLoopGroup();
 
 		this.bootstrap = new ServerBootstrap()
+			.localAddress(localAddr)
 			.group(boss, worker)
 			.channelFactory(NioServerSocketChannel::new)
 			.childHandler(new ChannelInitializer<Channel>() {
@@ -90,6 +92,11 @@ public class NettyService<C extends NettyClient> implements NetworkService<C> {
 	@Override
 	public ImmutableSet<C> getClients() {
 		return ImmutableSet.copyOf(clients);
+	}
+
+	@Override
+	public IMessageBus<NetworkEvent<C>, ?> getEventBus() {
+		return eventBus;
 	}
 
 	final AttributeKey<C> ATTR = AttributeKey.valueOf(Clients.class.getName() + ".ATTR");
@@ -188,8 +195,10 @@ public class NettyService<C extends NettyClient> implements NetworkService<C> {
 			fut.addListener(f -> {
 				if (res.isDone()) return;
 
-				if (f.isSuccess() && len.decrementAndGet() <= 0) {
-					res.setSuccess();
+				if (f.isSuccess()) {
+					if (len.decrementAndGet() <= 0) {
+						res.setSuccess();
+					}
 				} else {
 					res.setFailure(f.cause());
 				}
