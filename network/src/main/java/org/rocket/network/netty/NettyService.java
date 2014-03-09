@@ -107,7 +107,7 @@ public class NettyService<C extends NettyClient> implements NetworkService<C> {
 		public void channelActive(ChannelHandlerContext ctx) throws Exception {
 			C client = clientFactory.apply(ctx.channel());
 			clients.add(client);
-			ctx.attr(ATTR).set(client);
+			ctx.channel().attr(ATTR).set(client);
 
 			int connected = getActualConnectedClients();
 			if (maxConnectedClients < connected) {
@@ -119,7 +119,7 @@ public class NettyService<C extends NettyClient> implements NetworkService<C> {
 
 		@Override
 		public void channelInactive(ChannelHandlerContext ctx) throws Exception {
-			C client = ctx.attr(ATTR).getAndRemove();
+			C client = ctx.channel().attr(ATTR).getAndRemove();
 			clients.remove(client);
 
 			ctx.fireChannelInactive();
@@ -129,25 +129,25 @@ public class NettyService<C extends NettyClient> implements NetworkService<C> {
 	class Dispatch extends ChannelInboundHandlerAdapter {
 		@Override
 		public void channelActive(ChannelHandlerContext ctx) throws Exception {
-			C client = ctx.attr(ATTR).get();
+			C client = ctx.channel().attr(ATTR).get();
 			eventBus.post(new ConnectEvent<>(client)).now();
 		}
 
 		@Override
 		public void channelInactive(ChannelHandlerContext ctx) throws Exception {
-			C client = ctx.attr(ATTR).get();
+			C client = ctx.channel().attr(ATTR).get();
 			eventBus.post(new DisconnectEvent<>(client)).now();
 		}
 
 		@Override
 		public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
-			C client = ctx.attr(ATTR).get();
+			C client = ctx.channel().attr(ATTR).get();
 			eventBus.post(new ReceiveEvent<>(client, msg)).now();
 		}
 
 		@Override
 		public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
-			C client = ctx.attr(ATTR).get();
+			C client = ctx.channel().attr(ATTR).get();
 			eventBus.post(new RecoverEvent<>(client, cause)).now();
 		}
 	}
