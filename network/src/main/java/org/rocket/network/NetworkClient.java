@@ -6,5 +6,4 @@ public interface NetworkClient {
 	NetworkCommand write(Object o);
 	NetworkCommand transaction(Consumer<Transactional> fn);
 	NetworkCommand close();
-	NetworkCommand closeNow();
 }

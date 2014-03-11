@@ -1,7 +1,6 @@
 package org.rocket.network.netty;
 
 import io.netty.channel.Channel;
-import io.netty.channel.socket.SocketChannel;
 import org.rocket.network.NetworkClient;
 import org.rocket.network.NetworkCommand;
 import org.rocket.network.Transactional;
@@ -14,6 +13,7 @@ public class NettyClient implements NetworkClient {
 
 	public NettyClient(Channel channel) {
 		this.channel = Objects.requireNonNull(channel, "channel");
+
 	}
 
 	@Override
@@ -29,11 +29,6 @@ public class NettyClient implements NetworkClient {
 	@Override
 	public final NetworkCommand close() {
 		return new CloseCommand(channel);
-	}
-
-	@Override
-	public final NetworkCommand closeNow() {
-		return close();
 	}
 
 	@Override
