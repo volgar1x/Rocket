@@ -5,6 +5,7 @@ import org.rocket.network.NetworkClient;
 import org.rocket.network.NetworkCommand;
 import org.rocket.network.Transactional;
 
+import java.net.SocketAddress;
 import java.util.Objects;
 import java.util.function.Consumer;
 
@@ -13,10 +14,19 @@ public class NettyClient implements NetworkClient {
 
 	public NettyClient(Channel channel) {
 		this.channel = Objects.requireNonNull(channel, "channel");
-
 	}
 
-	@Override
+    @Override
+    public SocketAddress getLocalAddress() {
+        return channel.localAddress();
+    }
+
+    @Override
+    public SocketAddress getRemoteAddress() {
+        return channel.remoteAddress();
+    }
+
+    @Override
 	public final NetworkCommand write(Object o) {
 		return new WriteCommand(channel, o);
 	}
