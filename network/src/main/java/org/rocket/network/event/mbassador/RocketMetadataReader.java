@@ -40,7 +40,7 @@ public class RocketMetadataReader extends MetadataReader {
 					Invoke.Synchronously,
 					0,
 					false,
-					true,
+					isEnabled(annotation),
 					RocketHandlerInvocation.class
 			);
 
@@ -94,4 +94,18 @@ public class RocketMetadataReader extends MetadataReader {
 		}
 		return bottomMostHandlers;
 	}
+
+    private boolean isEnabled(Annotation ann) {
+        if (ann instanceof Connect) {
+            return ((Connect) ann).enabled();
+        } else if (ann instanceof Disconnect) {
+            return ((Disconnect) ann).enabled();
+        } else if (ann instanceof Receive) {
+            return ((Receive) ann).enabled();
+        } else if (ann instanceof Recover) {
+            return ((Recover) ann).enabled();
+        }
+
+        return false;
+    }
 }
