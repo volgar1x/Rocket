@@ -7,4 +7,6 @@ import java.lang.annotation.Target;
 
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.METHOD)
-public @interface Disconnect { }
+public @interface Disconnect {
+    boolean enabled() default true;
+}
