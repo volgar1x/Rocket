@@ -99,7 +99,7 @@ public class NettyService<C extends NettyClient> implements NetworkService<C> {
 		return eventBus;
 	}
 
-	final AttributeKey<C> ATTR = AttributeKey.valueOf(Clients.class.getName() + ".ATTR");
+	final AttributeKey<C> ATTR = AttributeKey.valueOf(NettyService.class.getName() + "$Clients.ATTR." + this.hashCode());
 
 	class Clients extends ChannelInboundHandlerAdapter {
 
@@ -108,7 +108,6 @@ public class NettyService<C extends NettyClient> implements NetworkService<C> {
 			C client = clientFactory.apply(ctx.channel());
 			clients.add(client);
 			ctx.channel().attr(ATTR).set(client);
-
 			int connected = getActualConnectedClients();
 			if (maxConnectedClients < connected) {
 				maxConnectedClients = connected;
