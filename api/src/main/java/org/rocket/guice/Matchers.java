@@ -6,6 +6,7 @@ import com.google.inject.matcher.Matcher;
 
 import java.lang.annotation.Annotation;
 import java.util.Objects;
+import java.util.function.Function;
 
 public final class Matchers {
 	static class AnnotatedWithMatcher extends AbstractMatcher<TypeLiteral<?>> {
@@ -24,4 +25,13 @@ public final class Matchers {
 	public static Matcher<? super TypeLiteral<?>> annotatedWith(Class<? extends Annotation> klass) {
 		return new AnnotatedWithMatcher(klass);
 	}
+
+    public static <T> Matcher<T> matcher(Function<T, Boolean> fn) {
+        return new AbstractMatcher<T>() {
+            @Override
+            public boolean matches(T t) {
+                return fn.apply(t);
+            }
+        };
+    }
 }
