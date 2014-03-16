@@ -6,12 +6,15 @@ import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.util.AttributeKey;
+import net.engio.mbassy.IPublicationErrorHandler;
+import net.engio.mbassy.PublicationError;
 import net.engio.mbassy.bus.IMessageBus;
 import org.rocket.Service;
 import org.rocket.ServiceContext;
 import org.rocket.network.NetworkCommand;
 import org.rocket.network.NetworkService;
 import org.rocket.network.event.*;
+import org.slf4j.Logger;
 
 import java.net.SocketAddress;
 import java.time.Duration;
@@ -25,20 +28,23 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public class NettyService<C extends NettyClient> implements NetworkService<C> {
+public class NettyService<C extends NettyClient> implements NetworkService<C>, IPublicationErrorHandler {
 
 	private final ServerBootstrap bootstrap;
 	private final EventLoopGroup boss, worker;
 	private final Function<Channel, C> clientFactory;
 	private final IMessageBus<NetworkEvent<C>, ?> eventBus;
+	private final Logger logger;
 	private final Set<C> clients = new HashSet<>();
 
 	private Optional<Channel> server;
 	private int maxConnectedClients;
 
-	public NettyService(Function<Channel, C> clientFactory, IMessageBus<NetworkEvent<C>, ?> eventBus, Consumer<Channel> initializer, SocketAddress localAddr) {
+	public NettyService(Function<Channel, C> clientFactory, IMessageBus<NetworkEvent<C>, ?> eventBus, Consumer<Channel> initializer, SocketAddress localAddr, Logger logger) {
 		this.clientFactory = clientFactory;
 		this.eventBus = eventBus;
+		this.logger = logger;
+		this.eventBus.addErrorHandler(this);
 
 		this.boss   = new NioEventLoopGroup();
 		this.worker = new NioEventLoopGroup();
@@ -64,14 +70,18 @@ public class NettyService<C extends NettyClient> implements NetworkService<C> {
 
 	@Override
 	public void start(ServiceContext ctx) {
+		logger.debug("starting...");
 		server = Optional.of(bootstrap.bind().awaitUninterruptibly().channel());
+		logger.info("started");
 	}
 
 	@Override
 	public void stop(ServiceContext ctx) {
+		logger.debug("stopping...");
 		server.get().close()       .awaitUninterruptibly();
 		worker.shutdownGracefully().awaitUninterruptibly();
 		boss.shutdownGracefully()  .awaitUninterruptibly();
+		logger.info("stopped");
 	}
 
 	@Override
@@ -97,6 +107,21 @@ public class NettyService<C extends NettyClient> implements NetworkService<C> {
 	@Override
 	public IMessageBus<NetworkEvent<C>, ?> getEventBus() {
 		return eventBus;
+	}
+
+	@Override
+	public void handleError(PublicationError error) {
+		Throwable cause = error.getCause();
+
+		if (cause instanceof Error) {
+			throw (Error) cause; // an error should not be catched
+		}
+
+		@SuppressWarnings("unchecked")
+		C client = ((NetworkEvent<C>) error.getPublishedObject()).getClient();
+
+		eventBus.post(new RecoverEvent<>(client, cause)).now();
+		logger.error("unhandled exception", cause);
 	}
 
 	final AttributeKey<C> ATTR = AttributeKey.valueOf(NettyService.class.getName() + "$Clients.ATTR." + this.hashCode());
