@@ -17,15 +17,11 @@ import org.rocket.network.event.*;
 import org.slf4j.Logger;
 
 import java.net.SocketAddress;
-import java.time.Duration;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class NettyService<C extends NettyClient> implements NetworkService<C>, IPublicationErrorHandler {
@@ -85,8 +81,8 @@ public class NettyService<C extends NettyClient> implements NetworkService<C>, I
 	}
 
 	@Override
-	public NetworkCommand broadcast(Object o) {
-		return new BroadcastCommand(o);
+	public NetworkCommand broadcast(Stream<C> clients, Object o) {
+		return new BroadcastCommand(worker.next(), clients, o);
 	}
 
 	@Override
@@ -174,61 +170,5 @@ public class NettyService<C extends NettyClient> implements NetworkService<C>, I
 			C client = ctx.channel().attr(ATTR).get();
 			eventBus.post(new RecoverEvent<>(client, cause)).now();
 		}
-	}
-
-	class BroadcastCommand implements NetworkCommand {
-		private final Object o;
-
-		BroadcastCommand(Object o) {
-			this.o = o;
-		}
-
-		@Override
-		public void now() {
-			collect(clients.stream().map(x -> x.channel.writeAndFlush(o))).awaitUninterruptibly();
-		}
-
-		@Override
-		public void now(Duration max) {
-			collect(clients.stream().map(x -> x.channel.writeAndFlush(o))).awaitUninterruptibly(max.toMillis());
-		}
-
-		@Override
-		public void async() {
-			for (C client : clients) {
-				client.channel.writeAndFlush(o);
-			}
-		}
-
-		@Override
-		public void async(Duration max) {
-			async();
-		}
-	}
-
-	ChannelFuture collect(Stream<ChannelFuture> s) {
-		return collect(s.collect(Collectors.toList()));
-	}
-
-	ChannelFuture collect(List<ChannelFuture> futures) {
-		ChannelPromise res = server.get().newPromise();
-
-		AtomicInteger len = new AtomicInteger(futures.size());
-
-		for (ChannelFuture fut : futures) {
-			fut.addListener(f -> {
-				if (res.isDone()) return;
-
-				if (f.isSuccess()) {
-					if (len.decrementAndGet() <= 0) {
-						res.setSuccess();
-					}
-				} else {
-					res.setFailure(f.cause());
-				}
-			});
-		}
-
-		return res;
 	}
 }
