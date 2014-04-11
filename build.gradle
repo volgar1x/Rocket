@@ -1,11 +1,12 @@
 allprojects {
 	repositories {
         mavenCentral()
+        maven { url 'https://raw.github.com/Blackrush/fungsi/maven-repo' }
     }
-	
-	buildscript {
-		repositories {
-			mavenCentral()
+
+    buildscript {
+        repositories {
+            mavenCentral()
 		}
 	}
 
@@ -19,6 +20,7 @@ subprojects {
     sourceCompatibility = 1.8
     
     dependencies {
+        compile 'org.fungsi:fungsi-core:1.0-SNAPSHOT'
         compile 'org.slf4j:slf4j-api:1.7.6'
         compile 'com.google.guava:guava:16.0.1'
         compile 'com.google.inject:guice:3.0'
