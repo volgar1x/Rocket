@@ -1,9 +1,14 @@
 package org.rocket.network.netty;
 
 import io.netty.util.concurrent.EventExecutor;
+import org.fungsi.Unit;
+import org.fungsi.concurrent.Future;
+import org.fungsi.concurrent.Futures;
 import org.rocket.network.NetworkCommand;
 
 import java.time.Duration;
+import java.util.List;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public final class BroadcastCommand implements NetworkCommand {
@@ -32,12 +37,17 @@ public final class BroadcastCommand implements NetworkCommand {
 	}
 
 	@Override
-	public void async() {
-		clients.forEach(x -> x.channel.writeAndFlush(o));
+	public Future<Unit> async() {
+        List<Future<Unit>> futures = clients
+                .map(x -> x.channel.writeAndFlush(o))
+                .map(ChannelFutures::toFungsi)
+                .collect(Collectors.toList());
+
+        return Futures.collect(futures).map(it -> Unit.instance());
 	}
 
 	@Override
-	public void async(Duration max) {
-		async();
+	public Future<Unit> async(Duration max) {
+		return async();
 	}
 }

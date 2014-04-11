@@ -1,13 +1,16 @@
 package org.rocket.network;
 
+import org.fungsi.Unit;
+import org.fungsi.concurrent.Future;
+
 import java.time.Duration;
 
 public interface NetworkCommand {
 	void now();
 	void now(Duration max);
 
-	void async();
-	void async(Duration max);
+	Future<Unit> async();
+	Future<Unit> async(Duration max);
 
     default NetworkCommand then(NetworkCommand other) {
         NetworkCommand self = this;
@@ -25,15 +28,13 @@ public interface NetworkCommand {
             }
 
             @Override
-            public void async() {
-                self.async();
-                other.async();
+            public Future<Unit> async() {
+                return self.async().bind(it -> other.async());
             }
 
             @Override
-            public void async(Duration max) {
-                self.async(max);
-                other.async(max);
+            public Future<Unit> async(Duration max) {
+                return self.async(max).bind(it -> other.async(max));
             }
         };
     }

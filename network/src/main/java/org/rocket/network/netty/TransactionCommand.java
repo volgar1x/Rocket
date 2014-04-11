@@ -1,14 +1,16 @@
 package org.rocket.network.netty;
 
 import io.netty.channel.Channel;
-import io.netty.channel.ChannelFuture;
-import io.netty.channel.socket.SocketChannel;
+import org.fungsi.Unit;
+import org.fungsi.concurrent.Future;
 import org.rocket.network.NetworkCommand;
 import org.rocket.network.Transactional;
 
 import java.time.Duration;
 import java.util.Objects;
 import java.util.function.Consumer;
+
+import static org.rocket.network.netty.ChannelFutures.toFungsi;
 
 public final class TransactionCommand implements NetworkCommand {
 	private final Channel channel;
@@ -20,11 +22,11 @@ public final class TransactionCommand implements NetworkCommand {
 	}
 
 	class TransactionalImpl implements Transactional {
-		ChannelFuture last;
+		Future<Unit> acc = Future.unit();
 
 		@Override
 		public void write(Object o) {
-			last = channel.write(o);
+			acc = acc.bind(it -> toFungsi(channel.write(o)));
 		}
 	}
 
@@ -34,9 +36,7 @@ public final class TransactionCommand implements NetworkCommand {
 		transaction.accept(impl);
 		channel.flush();
 
-		if (impl.last != null) {
-			impl.last.awaitUninterruptibly();
-		}
+        impl.acc.get();
 	}
 
 	@Override
@@ -45,19 +45,20 @@ public final class TransactionCommand implements NetworkCommand {
 		transaction.accept(impl);
 		channel.flush();
 
-		if (impl.last != null) {
-			impl.last.awaitUninterruptibly(max.toMillis());
-		}
+        impl.acc.get(max);
 	}
 
 	@Override
-	public void async() {
-		transaction.accept(new TransactionalImpl());
-		channel.flush();
+	public Future<Unit> async() {
+        TransactionalImpl impl = new TransactionalImpl();
+        transaction.accept(impl);
+        channel.flush();
+
+        return impl.acc;
 	}
 
 	@Override
-	public void async(Duration max) {
-		async();
+	public Future<Unit> async(Duration max) {
+		return async();
 	}
 }

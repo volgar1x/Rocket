@@ -1,11 +1,14 @@
 package org.rocket.network.netty;
 
 import io.netty.channel.Channel;
-import io.netty.channel.socket.SocketChannel;
+import org.fungsi.Unit;
+import org.fungsi.concurrent.Future;
 import org.rocket.network.NetworkCommand;
 
 import java.time.Duration;
 import java.util.Objects;
+
+import static org.rocket.network.netty.ChannelFutures.toFungsi;
 
 public final class WriteCommand implements NetworkCommand {
 	private final Channel channel;
@@ -27,12 +30,12 @@ public final class WriteCommand implements NetworkCommand {
 	}
 
 	@Override
-	public void async() {
-		channel.writeAndFlush(o);
-	}
+	public Future<Unit> async() {
+        return toFungsi(channel.writeAndFlush(o));
+    }
 
 	@Override
-	public void async(Duration max) { // not supported
-		async();
+	public Future<Unit> async(Duration max) { // not supported
+        return async();
 	}
 }
