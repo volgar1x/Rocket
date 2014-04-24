@@ -95,7 +95,7 @@ public class NettyService<C extends NettyClient> implements NetworkService<C>, I
 
 	@Override
 	public NetworkCommand broadcast(Stream<C> clients, Object o) {
-		return new BroadcastCommand(worker.next(), clients, o, this::newTimer);
+		return new BroadcastCommand(clients.map(it -> it.channel), o, this::newTimer);
 	}
 
 	@Override
