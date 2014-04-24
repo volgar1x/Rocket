@@ -47,7 +47,7 @@ public final class BroadcastCommand implements NetworkCommand {
                 .map(ChannelFutures::toFungsi)
                 .collect(Collectors.toList());
 
-        return Futures.collect(futures).map(it -> Unit.instance());
+        return Futures.collect(futures).toUnit();
 	}
 
 	@Override
