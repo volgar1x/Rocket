@@ -9,6 +9,8 @@ import io.netty.util.AttributeKey;
 import net.engio.mbassy.IPublicationErrorHandler;
 import net.engio.mbassy.PublicationError;
 import net.engio.mbassy.bus.IMessageBus;
+import org.fungsi.concurrent.Timer;
+import org.fungsi.concurrent.Timers;
 import org.rocket.Service;
 import org.rocket.ServiceContext;
 import org.rocket.network.NetworkCommand;
@@ -20,26 +22,29 @@ import java.net.SocketAddress;
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.function.BiFunction;
 import java.util.function.Consumer;
-import java.util.function.Function;
 import java.util.stream.Stream;
 
 public class NettyService<C extends NettyClient> implements NetworkService<C>, IPublicationErrorHandler {
 
 	private final ServerBootstrap bootstrap;
 	private final EventLoopGroup boss, worker;
-	private final Function<Channel, C> clientFactory;
+	private final BiFunction<Channel, NettyService<C>, C> clientFactory;
 	private final IMessageBus<NetworkEvent<C>, ?> eventBus;
+    private final ScheduledExecutorService scheduler;
 	private final Logger logger;
 	private final Set<C> clients = new HashSet<>();
 
 	private Optional<Channel> server;
 	private int maxConnectedClients;
 
-	public NettyService(Function<Channel, C> clientFactory, IMessageBus<NetworkEvent<C>, ?> eventBus, Consumer<Channel> initializer, SocketAddress localAddr, Logger logger) {
+	public NettyService(BiFunction<Channel, NettyService<C>, C> clientFactory, IMessageBus<NetworkEvent<C>, ?> eventBus, Consumer<Channel> initializer, SocketAddress localAddr, ScheduledExecutorService scheduler, Logger logger) {
 		this.clientFactory = clientFactory;
 		this.eventBus = eventBus;
-		this.logger = logger;
+        this.scheduler = scheduler;
+        this.logger = logger;
 		this.eventBus.addErrorHandler(this);
 
 		this.boss   = new NioEventLoopGroup();
@@ -64,6 +69,14 @@ public class NettyService<C extends NettyClient> implements NetworkService<C>, I
 		return Optional.empty();
 	}
 
+    public ScheduledExecutorService getScheduler() {
+        return scheduler;
+    }
+
+    public Timer newTimer() {
+        return Timers.wrap(getScheduler());
+    }
+
 	@Override
 	public void start(ServiceContext ctx) {
 		logger.debug("starting...");
@@ -82,7 +95,7 @@ public class NettyService<C extends NettyClient> implements NetworkService<C>, I
 
 	@Override
 	public NetworkCommand broadcast(Stream<C> clients, Object o) {
-		return new BroadcastCommand(worker.next(), clients, o);
+		return new BroadcastCommand(worker.next(), clients, o, this::newTimer);
 	}
 
 	@Override
@@ -126,7 +139,7 @@ public class NettyService<C extends NettyClient> implements NetworkService<C>, I
 
 		@Override
 		public void channelActive(ChannelHandlerContext ctx) throws Exception {
-			C client = clientFactory.apply(ctx.channel());
+			C client = clientFactory.apply(ctx.channel(), NettyService.this);
 			clients.add(client);
 			ctx.channel().attr(ATTR).set(client);
 			int connected = getActualConnectedClients();
