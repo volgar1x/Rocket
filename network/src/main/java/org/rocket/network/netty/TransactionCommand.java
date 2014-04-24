@@ -1,6 +1,7 @@
 package org.rocket.network.netty;
 
 import io.netty.channel.Channel;
+import io.netty.channel.ChannelFuture;
 import org.fungsi.Unit;
 import org.fungsi.concurrent.Future;
 import org.fungsi.concurrent.Futures;
@@ -12,8 +13,6 @@ import java.time.Duration;
 import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
-
-import static org.rocket.network.netty.ChannelFutures.toFungsi;
 
 public final class TransactionCommand implements NetworkCommand {
 	private final Channel channel;
@@ -27,12 +26,19 @@ public final class TransactionCommand implements NetworkCommand {
     }
 
 	class TransactionalImpl implements Transactional {
-		Future<Unit> acc = Futures.unit();
+		ChannelFuture last;
 
 		@Override
 		public void write(Object o) {
-			acc = acc.bind(it -> toFungsi(channel.write(o)));
+			last = channel.write(o);
 		}
+
+        Future<Unit> chained() {
+            return last != null
+                ? ChannelFutures.toFungsi(last)
+                : Futures.unit()
+                ;
+        }
 	}
 
 	@Override
@@ -41,7 +47,7 @@ public final class TransactionCommand implements NetworkCommand {
 		transaction.accept(impl);
 		channel.flush();
 
-        impl.acc.get();
+        impl.chained().get();
 	}
 
 	@Override
@@ -50,7 +56,7 @@ public final class TransactionCommand implements NetworkCommand {
 		transaction.accept(impl);
 		channel.flush();
 
-        impl.acc.get(max);
+        impl.chained().get(max);
 	}
 
 	@Override
@@ -59,7 +65,7 @@ public final class TransactionCommand implements NetworkCommand {
         transaction.accept(impl);
         channel.flush();
 
-        return impl.acc;
+        return impl.chained();
 	}
 
 	@Override
