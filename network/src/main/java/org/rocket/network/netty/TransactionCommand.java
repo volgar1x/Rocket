@@ -3,6 +3,7 @@ package org.rocket.network.netty;
 import io.netty.channel.Channel;
 import org.fungsi.Unit;
 import org.fungsi.concurrent.Future;
+import org.fungsi.concurrent.Futures;
 import org.rocket.network.NetworkCommand;
 import org.rocket.network.Transactional;
 
@@ -22,7 +23,7 @@ public final class TransactionCommand implements NetworkCommand {
 	}
 
 	class TransactionalImpl implements Transactional {
-		Future<Unit> acc = Future.unit();
+		Future<Unit> acc = Futures.unit();
 
 		@Override
 		public void write(Object o) {
