@@ -11,7 +11,7 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 public abstract class MinaClient implements NetworkClient {
-    private final IoSession session;
+    final IoSession session;
     private final Supplier<Timer> timer;
 
     protected MinaClient(IoSession session, Supplier<Timer> timer) {
