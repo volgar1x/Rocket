@@ -49,8 +49,12 @@ public class MinaService<C extends MinaClient> implements NetworkService<C> {
         config.accept(this.acceptor);
     }
 
-    Timer newTimer() {
-        return Timers.wrap(scheduler);
+    public ScheduledExecutorService getScheduler() {
+        return scheduler;
+    }
+
+    public Timer newTimer() {
+        return Timers.wrap(getScheduler());
     }
 
     @Override
@@ -102,8 +106,9 @@ public class MinaService<C extends MinaClient> implements NetworkService<C> {
         return Optional.empty();
     }
 
+    private static final Object CLIENT_KEY = MinaService.Handler.class.getName() + ".CLIENT_KEY";
+
     class Handler implements IoHandler {
-        private final Object CLIENT_KEY = MinaService.Handler.class.getName() + ".CLIENT_KEY";
 
         @Override
         public void sessionCreated(IoSession session) throws Exception {
