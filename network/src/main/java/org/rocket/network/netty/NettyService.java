@@ -5,7 +5,9 @@ import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
+import io.netty.util.Attribute;
 import io.netty.util.AttributeKey;
+import io.netty.util.AttributeMap;
 import net.engio.mbassy.IPublicationErrorHandler;
 import net.engio.mbassy.PublicationError;
 import net.engio.mbassy.bus.IMessageBus;
@@ -28,6 +30,12 @@ import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 public class NettyService<C extends NettyClient> implements NetworkService<C>, IPublicationErrorHandler {
+    public static final AttributeKey<Object> CLIENT_ATTR = AttributeKey.valueOf(NettyService.class.getName() + ".CLIENT_ATTR");
+
+    @SuppressWarnings("unchecked")
+    public static <C> Attribute<C> clientAttribute(AttributeMap map) {
+        return (Attribute) map.attr(CLIENT_ATTR);
+    }
 
 	private final ServerBootstrap bootstrap;
 	private final EventLoopGroup boss, worker;
@@ -118,30 +126,13 @@ public class NettyService<C extends NettyClient> implements NetworkService<C>, I
 		return eventBus;
 	}
 
-	@Override
-	public void handleError(PublicationError error) {
-		Throwable cause = error.getCause();
-
-		if (cause instanceof Error) {
-			throw (Error) cause; // an error should not be catched
-		}
-
-		@SuppressWarnings("unchecked")
-		C client = ((NetworkEvent<C>) error.getPublishedObject()).getClient();
-
-		eventBus.post(new RecoverEvent<>(client, cause)).now();
-		logger.error("unhandled exception", cause);
-	}
-
-	final AttributeKey<C> ATTR = AttributeKey.valueOf(NettyService.class.getName() + "$Clients.ATTR." + this.hashCode());
-
 	class Clients extends ChannelInboundHandlerAdapter {
 
 		@Override
 		public void channelActive(ChannelHandlerContext ctx) throws Exception {
 			C client = clientFactory.apply(ctx.channel(), NettyService.this);
 			clients.add(client);
-			ctx.channel().attr(ATTR).set(client);
+			ctx.channel().attr(CLIENT_ATTR).set(client);
 			int connected = getActualConnectedClients();
 			if (maxConnectedClients < connected) {
 				maxConnectedClients = connected;
@@ -152,36 +143,53 @@ public class NettyService<C extends NettyClient> implements NetworkService<C>, I
 
 		@Override
 		public void channelInactive(ChannelHandlerContext ctx) throws Exception {
-			C client = ctx.channel().attr(ATTR).getAndRemove();
+			C client = NettyService.<C>clientAttribute(ctx.channel()).getAndRemove();
 			clients.remove(client);
 
 			ctx.fireChannelInactive();
 		}
-	}
+
+    }
 
 	class Dispatch extends ChannelInboundHandlerAdapter {
-		@Override
+
+        @Override
 		public void channelActive(ChannelHandlerContext ctx) throws Exception {
-			C client = ctx.channel().attr(ATTR).get();
+			C client = NettyService.<C>clientAttribute(ctx.channel()).get();
 			eventBus.post(new ConnectEvent<>(client)).now();
 		}
-
 		@Override
 		public void channelInactive(ChannelHandlerContext ctx) throws Exception {
-			C client = ctx.channel().attr(ATTR).get();
+			C client = NettyService.<C>clientAttribute(ctx.channel()).get();
 			eventBus.post(new DisconnectEvent<>(client)).now();
 		}
 
 		@Override
 		public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
-			C client = ctx.channel().attr(ATTR).get();
+			C client = NettyService.<C>clientAttribute(ctx.channel()).get();
 			eventBus.post(new ReceiveEvent<>(client, msg)).now();
 		}
 
 		@Override
 		public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
-			C client = ctx.channel().attr(ATTR).get();
+			C client = NettyService.<C>clientAttribute(ctx.channel()).get();
 			eventBus.post(new RecoverEvent<>(client, cause)).now();
 		}
-	}
+
+    }
+
+    @Override
+    public void handleError(PublicationError error) {
+        Throwable cause = error.getCause();
+
+        if (cause instanceof Error) {
+            throw (Error) cause; // an error should not be caught
+        }
+
+        @SuppressWarnings("unchecked")
+        C client = ((NetworkEvent<C>) error.getPublishedObject()).getClient();
+
+        eventBus.post(new RecoverEvent<>(client, cause)).now();
+        logger.error("unhandled exception", cause);
+    }
 }
