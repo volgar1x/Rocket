@@ -8,8 +8,6 @@ import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.util.Attribute;
 import io.netty.util.AttributeKey;
 import io.netty.util.AttributeMap;
-import net.engio.mbassy.IPublicationErrorHandler;
-import net.engio.mbassy.PublicationError;
 import net.engio.mbassy.bus.IMessageBus;
 import org.fungsi.concurrent.Timer;
 import org.fungsi.concurrent.Timers;
@@ -29,7 +27,7 @@ import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
-public class NettyService<C extends NettyClient> implements NetworkService<C>, IPublicationErrorHandler {
+public class NettyService<C extends NettyClient> implements NetworkService<C> {
     public static final AttributeKey<Object> CLIENT_ATTR = AttributeKey.valueOf(NettyService.class.getName() + ".CLIENT_ATTR");
 
     @SuppressWarnings("unchecked")
@@ -53,7 +51,6 @@ public class NettyService<C extends NettyClient> implements NetworkService<C>, I
 		this.eventBus = eventBus;
         this.scheduler = scheduler;
         this.logger = logger;
-		this.eventBus.addErrorHandler(this);
 
 		this.boss   = new NioEventLoopGroup();
 		this.worker = new NioEventLoopGroup();
@@ -143,10 +140,10 @@ public class NettyService<C extends NettyClient> implements NetworkService<C>, I
 
 		@Override
 		public void channelInactive(ChannelHandlerContext ctx) throws Exception {
-			C client = NettyService.<C>clientAttribute(ctx.channel()).getAndRemove();
-			clients.remove(client);
+            ctx.fireChannelInactive();
 
-			ctx.fireChannelInactive();
+            C client = NettyService.<C>clientAttribute(ctx.channel()).getAndRemove();
+            clients.remove(client);
 		}
 
     }
@@ -176,20 +173,5 @@ public class NettyService<C extends NettyClient> implements NetworkService<C>, I
 			eventBus.post(new RecoverEvent<>(client, cause)).now();
 		}
 
-    }
-
-    @Override
-    public void handleError(PublicationError error) {
-        Throwable cause = error.getCause();
-
-        if (cause instanceof Error) {
-            throw (Error) cause; // an error should not be caught
-        }
-
-        @SuppressWarnings("unchecked")
-        C client = ((NetworkEvent<C>) error.getPublishedObject()).getClient();
-
-        eventBus.post(new RecoverEvent<>(client, cause)).now();
-        logger.error("unhandled exception", cause);
     }
 }
