@@ -1,7 +1,7 @@
 package org.rocket.network.mina;
 
+import com.github.blackrush.acara.EventBus;
 import com.google.common.collect.ImmutableSet;
-import net.engio.mbassy.bus.IMessageBus;
 import org.apache.mina.core.service.IoAcceptor;
 import org.apache.mina.core.service.IoHandler;
 import org.apache.mina.core.session.IdleStatus;
@@ -13,7 +13,10 @@ import org.rocket.Service;
 import org.rocket.ServiceContext;
 import org.rocket.network.NetworkCommand;
 import org.rocket.network.NetworkService;
-import org.rocket.network.event.*;
+import org.rocket.network.event.ConnectEvent;
+import org.rocket.network.event.DisconnectEvent;
+import org.rocket.network.event.ReceiveEvent;
+import org.rocket.network.event.RecoverEvent;
 import org.slf4j.Logger;
 
 import java.io.IOException;
@@ -29,7 +32,7 @@ import java.util.stream.Stream;
 import static com.google.common.base.Throwables.propagate;
 
 public class MinaService<C extends MinaClient> implements NetworkService<C> {
-    private final IMessageBus<NetworkEvent<C>, ?> eventBus;
+    private final EventBus eventBus;
     private final ScheduledExecutorService scheduler;
     private final BiFunction<IoSession, MinaService<C>, C> clientFactory;
     private final Logger logger;
@@ -37,7 +40,7 @@ public class MinaService<C extends MinaClient> implements NetworkService<C> {
     private final IoAcceptor acceptor;
     private final Set<C> clients = new HashSet<>();
 
-    public MinaService(IMessageBus<NetworkEvent<C>, ?> eventBus, ScheduledExecutorService scheduler, SocketAddress addr, BiFunction<IoSession, MinaService<C>, C> clientFactory, Logger logger, Consumer<IoAcceptor> config) {
+    public MinaService(EventBus eventBus, ScheduledExecutorService scheduler, SocketAddress addr, BiFunction<IoSession, MinaService<C>, C> clientFactory, Logger logger, Consumer<IoAcceptor> config) {
         this.eventBus = eventBus;
         this.scheduler = scheduler;
         this.clientFactory = clientFactory;
@@ -92,7 +95,7 @@ public class MinaService<C extends MinaClient> implements NetworkService<C> {
     }
 
     @Override
-    public IMessageBus<NetworkEvent<C>, ?> getEventBus() {
+    public EventBus getEventBus() {
         return eventBus;
     }
 
@@ -106,7 +109,7 @@ public class MinaService<C extends MinaClient> implements NetworkService<C> {
         return Optional.empty();
     }
 
-    private static final Object CLIENT_KEY = MinaService.Handler.class.getName() + ".CLIENT_KEY";
+    public static final Object CLIENT_KEY = MinaService.Handler.class.getName() + ".CLIENT_KEY";
 
     class Handler implements IoHandler {
 
@@ -122,7 +125,7 @@ public class MinaService<C extends MinaClient> implements NetworkService<C> {
             @SuppressWarnings("unchecked")
             C client = (C) session.getAttribute(CLIENT_KEY);
 
-            eventBus.post(new ConnectEvent<>(client)).asynchronously();
+            eventBus.publishSync(new ConnectEvent<>(client));
         }
 
         @Override
@@ -131,7 +134,7 @@ public class MinaService<C extends MinaClient> implements NetworkService<C> {
             C client = (C) session.removeAttribute(CLIENT_KEY);
             clients.remove(client);
 
-            eventBus.post(new DisconnectEvent<>(client)).asynchronously();
+            eventBus.publishSync(new DisconnectEvent<>(client));
         }
 
         @Override
@@ -148,7 +151,7 @@ public class MinaService<C extends MinaClient> implements NetworkService<C> {
             @SuppressWarnings("unchecked")
             C client = (C) session.getAttribute(CLIENT_KEY);
 
-            eventBus.post(new RecoverEvent<>(client, cause)).asynchronously();
+            eventBus.publishSync(new RecoverEvent<>(client, cause));
         }
 
         @Override
@@ -156,7 +159,7 @@ public class MinaService<C extends MinaClient> implements NetworkService<C> {
             @SuppressWarnings("unchecked")
             C client = (C) session.getAttribute(CLIENT_KEY);
 
-            eventBus.post(new ReceiveEvent<>(client, message)).asynchronously();
+            eventBus.publishSync(new ReceiveEvent<>(client, message));
         }
 
         @Override

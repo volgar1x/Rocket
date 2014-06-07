@@ -4,5 +4,5 @@ dependencies {
     compile 'io.netty:netty-transport:4.0.17.Final'
     compile 'org.apache.mina:mina-core:2.0.7'
 
-    compile 'net.engio:mbassador:1.1.9'
+    compile 'com.github.blackrush.acara:acara-api:1.0-SNAPSHOT'
 }

@@ -1,5 +1,6 @@
 package org.rocket.network.netty;
 
+import com.github.blackrush.acara.EventBus;
 import com.google.common.collect.ImmutableSet;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.*;
@@ -8,14 +9,16 @@ import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.util.Attribute;
 import io.netty.util.AttributeKey;
 import io.netty.util.AttributeMap;
-import net.engio.mbassy.bus.IMessageBus;
 import org.fungsi.concurrent.Timer;
 import org.fungsi.concurrent.Timers;
 import org.rocket.Service;
 import org.rocket.ServiceContext;
 import org.rocket.network.NetworkCommand;
 import org.rocket.network.NetworkService;
-import org.rocket.network.event.*;
+import org.rocket.network.event.ConnectEvent;
+import org.rocket.network.event.DisconnectEvent;
+import org.rocket.network.event.ReceiveEvent;
+import org.rocket.network.event.RecoverEvent;
 import org.slf4j.Logger;
 
 import java.net.SocketAddress;
@@ -38,7 +41,7 @@ public class NettyService<C extends NettyClient> implements NetworkService<C> {
 	private final ServerBootstrap bootstrap;
 	private final EventLoopGroup boss, worker;
 	private final BiFunction<Channel, NettyService<C>, C> clientFactory;
-	private final IMessageBus<NetworkEvent<C>, ?> eventBus;
+	private final EventBus eventBus;
     private final ScheduledExecutorService scheduler;
 	private final Logger logger;
 	private final Set<C> clients = new HashSet<>();
@@ -46,7 +49,7 @@ public class NettyService<C extends NettyClient> implements NetworkService<C> {
 	private Optional<Channel> server;
 	private int maxConnectedClients;
 
-	public NettyService(BiFunction<Channel, NettyService<C>, C> clientFactory, IMessageBus<NetworkEvent<C>, ?> eventBus, Consumer<Channel> initializer, SocketAddress localAddr, ScheduledExecutorService scheduler, Logger logger) {
+	public NettyService(BiFunction<Channel, NettyService<C>, C> clientFactory, EventBus eventBus, Consumer<Channel> initializer, SocketAddress localAddr, ScheduledExecutorService scheduler, Logger logger) {
 		this.clientFactory = clientFactory;
 		this.eventBus = eventBus;
         this.scheduler = scheduler;
@@ -119,7 +122,7 @@ public class NettyService<C extends NettyClient> implements NetworkService<C> {
 	}
 
 	@Override
-	public IMessageBus<NetworkEvent<C>, ?> getEventBus() {
+	public EventBus getEventBus() {
 		return eventBus;
 	}
 
@@ -153,24 +156,24 @@ public class NettyService<C extends NettyClient> implements NetworkService<C> {
         @Override
 		public void channelActive(ChannelHandlerContext ctx) throws Exception {
 			C client = NettyService.<C>clientAttribute(ctx.channel()).get();
-			eventBus.post(new ConnectEvent<>(client)).now();
+			eventBus.publishSync(new ConnectEvent<>(client));
 		}
 		@Override
 		public void channelInactive(ChannelHandlerContext ctx) throws Exception {
 			C client = NettyService.<C>clientAttribute(ctx.channel()).get();
-			eventBus.post(new DisconnectEvent<>(client)).now();
+			eventBus.publishSync(new DisconnectEvent<>(client));
 		}
 
 		@Override
 		public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
 			C client = NettyService.<C>clientAttribute(ctx.channel()).get();
-			eventBus.post(new ReceiveEvent<>(client, msg)).now();
+			eventBus.publishSync(new ReceiveEvent<>(client, msg));
 		}
 
 		@Override
 		public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
 			C client = NettyService.<C>clientAttribute(ctx.channel()).get();
-			eventBus.post(new RecoverEvent<>(client, cause)).now();
+			eventBus.publishSync(new RecoverEvent<>(client, cause));
 		}
 
     }

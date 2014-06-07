@@ -1,9 +1,8 @@
 package org.rocket.network;
 
+import com.github.blackrush.acara.EventBus;
 import com.google.common.collect.ImmutableSet;
-import net.engio.mbassy.bus.IMessageBus;
 import org.rocket.Service;
-import org.rocket.network.event.NetworkEvent;
 
 import java.util.stream.Stream;
 
@@ -18,5 +17,5 @@ public interface NetworkService<C extends NetworkClient> extends Service {
 		return broadcast(getClients().stream(), o);
 	}
 
-	IMessageBus<NetworkEvent<C>, ?> getEventBus();
+	EventBus getEventBus();
 }
