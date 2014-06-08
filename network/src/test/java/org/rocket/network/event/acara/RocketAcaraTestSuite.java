@@ -8,6 +8,7 @@ import org.junit.runners.Suite;
         RocketDispatcherLookupTest.class,
         RocketDispatcherTest.class,
         RocketListenerMetadataLookupTest.class,
+        RocketEventMetadataLookupTest.class
 })
 public class RocketAcaraTestSuite {
 }
