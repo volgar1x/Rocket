@@ -22,8 +22,8 @@ public final class RocketEventWithComponentMetadata<T> implements EventMetadata 
         return eventClass;
     }
 
-    public Class<?> getEventClass() {
-        return eventClass;
+    public Class<?> getComponentClass() {
+        return componentClass;
     }
 
     @Override
