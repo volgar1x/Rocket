@@ -1,21 +1,28 @@
-allprojects {
-	repositories {
+buildscript {
+    repositories {
         mavenCentral()
-        maven { url 'http://dl.bintray.com/blackrush/maven' }
+        jcenter()
     }
 
-    buildscript {
-        repositories {
-            mavenCentral()
-		}
-	}
+    dependencies {
+        classpath 'com.jfrog.bintray.gradle:gradle-bintray-plugin:0.3'
+    }
+}
 
+allprojects {
 	group = 'org.rocket'
     version = '1.0-SNAPSHOT'
 }
 
 subprojects {
+    repositories {
+        mavenCentral()
+        maven { url 'http://dl.bintray.com/blackrush/maven' }
+    }
+
     apply plugin: 'java'
+    apply plugin: 'maven-publish'
+    apply plugin: 'bintray'
 
     sourceCompatibility = 1.8
     targetCompatibility = 1.8
@@ -29,10 +36,54 @@ subprojects {
         testCompile 'junit:junit:4.11'
         testCompile 'org.mockito:mockito-core:1.9.5'
     }
+
+    task sourcesJar(type: Jar, dependsOn: classes) {
+        classifier = 'sources'
+        from sourceSets.main.allSource
+    }
+
+    task javadocJar(type: Jar, dependsOn: javadoc) {
+        classifier = 'javadoc'
+        from javadoc.destinationDir
+    }
+
+    artifacts {
+        archives sourcesJar, javadocJar
+    }
+
+    publishing {
+        publications {
+            mavenJava(MavenPublication) {
+                from components.java
+
+                artifact sourcesJar {
+                    classifier "sources"
+                }
+
+                artifact javadocJar {
+                    classifier "javadoc"
+                }
+
+                artifactId = "rocket-${project.name}"
+            }
+        }
+    }
+
+    bintray {
+        user = bintrayUser
+        key = bintrayKey
+        publications = ['mavenJava']
+
+        pkg {
+            repo = 'maven'
+            name = 'Rocket'
+            licenses = ['MIT']
+        }
+    }
+
+    bintrayUpload.dependsOn publishToMavenLocal
 }
 
 task wrapper(type: Wrapper) {
     gradleVersion = '1.10'
 }
-
-apply from: 'deploy.gradle'
