@@ -1,8 +1,8 @@
 dependencies {
     compile project(':api')
 
-    compile 'io.netty:netty-transport:4.0.17.Final'
+    compile 'io.netty:netty-transport:4.0.19.Final'
     compile 'org.apache.mina:mina-core:2.0.7'
 
-    compile 'com.github.blackrush.acara:acara-api:1.0-SNAPSHOT'
+    compile 'com.github.blackrush.acara:acara-api:1.0'
 }

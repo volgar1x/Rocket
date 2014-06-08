@@ -1,8 +1,7 @@
 allprojects {
 	repositories {
         mavenCentral()
-        maven { url 'https://raw.github.com/Blackrush/fungsi/maven-repo' }
-        maven { url 'https://raw.github.com/Blackrush/acara/maven-repo' }
+        maven { url 'http://dl.bintray.com/blackrush/maven' }
     }
 
     buildscript {
@@ -19,13 +18,14 @@ subprojects {
     apply plugin: 'java'
 
     sourceCompatibility = 1.8
-    
+    targetCompatibility = 1.8
+
     dependencies {
-        compile 'org.fungsi:fungsi-core:1.0-SNAPSHOT'
-        compile 'org.slf4j:slf4j-api:1.7.6'
-        compile 'com.google.guava:guava:16.0.1'
+        compile 'org.fungsi:fungsi-core:1.0'
+        compile 'org.slf4j:slf4j-api:1.7.7'
+        compile 'com.google.guava:guava:17.0'
         compile 'com.google.inject:guice:3.0'
-        compile 'com.typesafe:config:1.2.0'
+        compile 'com.typesafe:config:1.2.1'
         testCompile 'junit:junit:4.11'
         testCompile 'org.mockito:mockito-core:1.9.5'
     }
