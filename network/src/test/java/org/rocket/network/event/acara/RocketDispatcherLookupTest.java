@@ -5,6 +5,7 @@ import com.github.blackrush.acara.dispatch.Dispatcher;
 import org.junit.Before;
 import org.junit.Test;
 import org.rocket.network.NetworkClient;
+import org.rocket.network.event.RecoverEvent;
 
 import java.util.Optional;
 
@@ -26,7 +27,11 @@ public class RocketDispatcherLookupTest {
         ListenerMetadata metadata = new ListenerMetadata(
                 SomeListener.class,
                 SomeListener.class.getDeclaredMethod("recover", NetworkClient.class, Throwable.class),
-                Throwable.class
+                new RocketEventWithComponentMetadata<>(
+                        RecoverEvent.class,
+                        Throwable.class,
+                        RecoverEvent::getError
+                )
         );
 
         // when

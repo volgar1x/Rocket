@@ -21,7 +21,11 @@ public class RocketDispatcherTest {
         metadata = new ListenerMetadata(
                 SomeListener.class,
                 SomeListener.class.getDeclaredMethod("recover", NetworkClient.class, Throwable.class),
-                Throwable.class
+                new RocketEventWithComponentMetadata<>(
+                        RecoverEvent.class,
+                        Throwable.class,
+                        RecoverEvent::getError
+                )
         );
         dispatcher = new RocketDispatcher(metadata);
         client = mock(NetworkClient.class);

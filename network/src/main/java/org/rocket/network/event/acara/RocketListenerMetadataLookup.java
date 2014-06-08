@@ -1,11 +1,9 @@
 package org.rocket.network.event.acara;
 
+import com.github.blackrush.acara.EventMetadata;
 import com.github.blackrush.acara.ListenerMetadata;
 import com.github.blackrush.acara.ListenerMetadataLookup;
-import org.rocket.network.event.Connect;
-import org.rocket.network.event.Disconnect;
-import org.rocket.network.event.Receive;
-import org.rocket.network.event.Recover;
+import org.rocket.network.event.*;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
@@ -82,11 +80,36 @@ public class RocketListenerMetadataLookup implements ListenerMetadataLookup {
         return Stream.of(klass.getDeclaredMethods());
     }
 
-    public static Class<?> getHandledEventClass(Method method) {
-        if (method.getParameterCount() == 2) {
-            return method.getParameterTypes()[1];
-        }
-        return method.getParameterTypes()[0];
+    public static EventMetadata getHandledEventMetadata(Method method) {
+        return new AnnotationVisitor<EventMetadata>() {
+            @Override
+            public EventMetadata visitConnect(Connect ann) {
+                return new RocketEventMetadata(ConnectEvent.class);
+            }
+
+            @Override
+            public EventMetadata visitDisconnect(Disconnect ann) {
+                return new RocketEventMetadata(DisconnectEvent.class);
+            }
+
+            @Override
+            public EventMetadata visitReceive(Receive ann) {
+                return new RocketEventWithComponentMetadata<>(
+                        ReceiveEvent.class,
+                        method.getParameterTypes()[1],
+                        ReceiveEvent::getMessage
+                );
+            }
+
+            @Override
+            public EventMetadata visitRecover(Recover ann) {
+                return new RocketEventWithComponentMetadata<>(
+                        RecoverEvent.class,
+                        method.getParameterTypes()[1],
+                        RecoverEvent::getError
+                );
+            }
+        }.visit(method).get();
     }
 
     @Override
@@ -94,6 +117,6 @@ public class RocketListenerMetadataLookup implements ListenerMetadataLookup {
         return traverseInheritance(listener.getClass())
                 .flatMap(RocketListenerMetadataLookup::getDeclaredMethods)
                 .filter(RocketListenerMetadataLookup::isValidListener)
-                .map(method -> new ListenerMetadata(listener.getClass(), method, getHandledEventClass(method)));
+                .map(method -> new ListenerMetadata(listener.getClass(), method, getHandledEventMetadata(method)));
     }
 }

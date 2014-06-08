@@ -3,6 +3,7 @@ package org.rocket.network.event.acara;
 import com.github.blackrush.acara.ListenerMetadata;
 import org.junit.Before;
 import org.junit.Test;
+import org.rocket.network.event.RecoverEvent;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -32,7 +33,7 @@ public class RocketListenerMetadataLookupTest {
 
         ListenerMetadata metadata = res.get(0);
         assertThat("listener class", metadata.getListenerClass(), equalTo(SomeListener.class));
-        assertThat("handled event class", metadata.getHandledEventClass(), equalTo(Throwable.class));
+        assertThat("handled event class", metadata.getHandledEventMetadata().getRawEventClass(), equalTo(RecoverEvent.class));
         assertThat("listener method name", metadata.getListenerMethod().getName(), equalTo("recover"));
     }
 }
