@@ -17,7 +17,7 @@ allprojects {
 subprojects {
     repositories {
         mavenCentral()
-        maven { url 'http://dl.bintray.com/blackrush/maven' }
+        jcenter()
     }
 
     apply plugin: 'java'

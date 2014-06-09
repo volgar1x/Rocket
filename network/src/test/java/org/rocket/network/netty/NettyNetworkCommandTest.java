@@ -2,19 +2,32 @@ package org.rocket.network.netty;
 
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
+import org.fungsi.concurrent.Timer;
 import org.fungsi.concurrent.Timers;
+import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InOrder;
 
+import java.util.concurrent.Executors;
+import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 import static org.mockito.Mockito.*;
 
 public class NettyNetworkCommandTest {
+    
+    private Supplier<Timer> timer;
+
+    @Before
+    public void setUp() throws Exception {
+        timer = () -> Timers.wrap(Executors.newSingleThreadScheduledExecutor());
+
+    }
+
     @Test
     public void testEmptyTransaction() throws Exception {
         Channel channel = mock(Channel.class);
-        TransactionCommand cmd = new TransactionCommand(channel, tx -> {}, Timers::newTimer);
+        TransactionCommand cmd = new TransactionCommand(channel, tx -> {}, timer);
 
         cmd.async();
 
@@ -33,7 +46,7 @@ public class NettyNetworkCommandTest {
         TransactionCommand cmd = new TransactionCommand(channel, tx -> {
             tx.write("hola");
             tx.write("hello");
-        }, Timers::newTimer);
+        }, timer);
 
         when(channel.write("hola")).thenReturn(holaFut);
         when(channel.write("hello")).thenReturn(helloFut);
@@ -55,7 +68,7 @@ public class NettyNetworkCommandTest {
         Channel channel = mock(Channel.class);
         ChannelFuture fut = mock(ChannelFuture.class);
 
-        WriteCommand cmd = new WriteCommand(channel, "hello", Timers::newTimer);
+        WriteCommand cmd = new WriteCommand(channel, "hello", timer);
 
         when(channel.writeAndFlush("hello")).thenReturn(fut);
 
@@ -73,7 +86,7 @@ public class NettyNetworkCommandTest {
         Channel channel = mock(Channel.class);
         ChannelFuture fut = mock(ChannelFuture.class);
 
-        CloseCommand cmd = new CloseCommand(channel, Timers::newTimer);
+        CloseCommand cmd = new CloseCommand(channel, timer);
 
         when(channel.close()).thenReturn(fut);
 
@@ -93,7 +106,7 @@ public class NettyNetworkCommandTest {
         ChannelFuture channelFut1 = mock(ChannelFuture.class);
         ChannelFuture channelFut2 = mock(ChannelFuture.class);
 
-        BroadcastCommand cmd = new BroadcastCommand(Stream.of(channel1, channel2), "hello", Timers::newTimer);
+        BroadcastCommand cmd = new BroadcastCommand(Stream.of(channel1, channel2), "hello", timer);
 
         when(channel1.writeAndFlush("hello")).thenReturn(channelFut1);
         when(channel2.writeAndFlush("hello")).thenReturn(channelFut2);
