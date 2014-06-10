@@ -3,7 +3,6 @@ jdk:
   - oraclejdk8
 branches:
   only:
-    - master
 before_install:
   - 'echo $JAVA_OPTS'
   - 'export JAVA_OPTS="-XX:MaxPermSize=512m -XX:+CMSClassUnloadingEnabled -XX:+CMSPermGenSweepingEnabled -XX:+HeapDumpOnOutOfMemoryError -Xmx1024m"' 
