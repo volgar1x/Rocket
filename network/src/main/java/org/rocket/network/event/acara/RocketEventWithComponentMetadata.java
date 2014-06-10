@@ -3,6 +3,7 @@ package org.rocket.network.event.acara;
 import com.github.blackrush.acara.EventMetadata;
 
 import java.util.function.Function;
+import java.util.stream.Stream;
 
 import static java.util.Objects.requireNonNull;
 
@@ -27,6 +28,15 @@ public final class RocketEventWithComponentMetadata<T> implements EventMetadata 
     }
 
     @Override
+    public Stream<EventMetadata> getParent() {
+        Class<?> superclass = componentClass.getSuperclass();
+        return superclass == Object.class
+                ? Stream.empty()
+                : Stream.of(new RocketEventWithComponentMetadata<T>(eventClass, superclass, getComponentFunction))
+                ;
+    }
+
+    @Override
     public boolean accept(Object event) {
         if (!eventClass.isInstance(event)) {
             return false;
@@ -44,7 +54,6 @@ public final class RocketEventWithComponentMetadata<T> implements EventMetadata 
 
         return componentClass.equals(that.componentClass) &&
                eventClass.equals(that.eventClass);
-
     }
 
     @Override
