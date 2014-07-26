@@ -1,6 +1,5 @@
 package org.rocket.network.event.acara;
 
-import com.github.blackrush.acara.EventMetadata;
 import org.junit.Before;
 import org.junit.Test;
 import org.rocket.network.NetworkClient;
@@ -9,11 +8,8 @@ import org.rocket.network.event.DisconnectEvent;
 import org.rocket.network.event.ReceiveEvent;
 import org.rocket.network.event.RecoverEvent;
 
-import java.util.Optional;
-
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 
 public class RocketEventMetadataLookupTest {
@@ -33,12 +29,11 @@ public class RocketEventMetadataLookupTest {
         ConnectEvent event = new ConnectEvent<>(client);
 
         // when
-        Optional<EventMetadata> res = lookup.lookup(event);
+        RocketEventMetadata res = (RocketEventMetadata) lookup.lookup(event).get();
 
         // then
-        EventMetadata em = res.get();
-        assertTrue("metadata is an instance of RocketEventMetadata", em instanceof RocketEventMetadata);
-        assertThat("metadata raw event class", em.getRawEventClass(), equalTo(ConnectEvent.class));
+        assertThat("metadata raw event class", res.getRawEventClass(), equalTo(ConnectEvent.class));
+        assertThat("metadata parent count", res.getParent().count(), equalTo(0L));
     }
 
     @Test
@@ -47,12 +42,11 @@ public class RocketEventMetadataLookupTest {
         DisconnectEvent event = new DisconnectEvent<>(client);
 
         // when
-        Optional<EventMetadata> res = lookup.lookup(event);
+        RocketEventMetadata res = (RocketEventMetadata) lookup.lookup(event).get();
 
         // then
-        EventMetadata em = res.get();
-        assertTrue("metadata is an instance of RocketEventMetadata", em instanceof RocketEventMetadata);
-        assertThat("metadata raw event class", em.getRawEventClass(), equalTo(DisconnectEvent.class));
+        assertThat("metadata raw event class", res.getRawEventClass(), equalTo(DisconnectEvent.class));
+        assertThat("metadata parent count", res.getParent().count(), equalTo(0L));
     }
 
     @Test
@@ -61,12 +55,12 @@ public class RocketEventMetadataLookupTest {
         ReceiveEvent msg = new ReceiveEvent<>(client, "msg");
 
         // when
-        Optional<EventMetadata> res = lookup.lookup(msg);
+        RocketEventWithComponentMetadata res = (RocketEventWithComponentMetadata) lookup.lookup(msg).get();
 
         // then
-        RocketEventWithComponentMetadata em = (RocketEventWithComponentMetadata) res.get();
-        assertThat("metadata raw event class", em.getRawEventClass(), equalTo(ReceiveEvent.class));
-        assertThat("metadata component class", em.getComponentClass(), equalTo(String.class));
+        assertThat("metadata raw event class", res.getRawEventClass(), equalTo(ReceiveEvent.class));
+        assertThat("metadata component class", res.getComponentClass(), equalTo(String.class));
+        assertThat("metadata parent count", res.getParent().count(), equalTo(0L));
     }
 
     @Test
@@ -75,11 +69,11 @@ public class RocketEventMetadataLookupTest {
         RecoverEvent msg = new RecoverEvent<>(client, new NullPointerException());
 
         // when
-        Optional<EventMetadata> res = lookup.lookup(msg);
+        RocketEventWithComponentMetadata res = (RocketEventWithComponentMetadata) lookup.lookup(msg).get();
 
         // then
-        RocketEventWithComponentMetadata em = (RocketEventWithComponentMetadata) res.get();
-        assertThat("metadata raw event class", em.getRawEventClass(), equalTo(RecoverEvent.class));
-        assertThat("metadata component class", em.getComponentClass(), equalTo(NullPointerException.class));
+        assertThat("metadata raw event class", res.getRawEventClass(), equalTo(RecoverEvent.class));
+        assertThat("metadata component class", res.getComponentClass(), equalTo(NullPointerException.class));
+        assertThat("metadata parent count", res.getParent().count(), equalTo(1L));
     }
 }

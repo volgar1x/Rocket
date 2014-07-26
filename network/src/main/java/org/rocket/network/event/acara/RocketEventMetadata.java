@@ -2,6 +2,8 @@ package org.rocket.network.event.acara;
 
 import com.github.blackrush.acara.EventMetadata;
 
+import java.util.stream.Stream;
+
 import static java.util.Objects.requireNonNull;
 
 public final class RocketEventMetadata implements EventMetadata {
@@ -14,6 +16,11 @@ public final class RocketEventMetadata implements EventMetadata {
     @Override
     public Class<?> getRawEventClass() {
         return eventClass;
+    }
+
+    @Override
+    public Stream<EventMetadata> getParent() {
+        return Stream.empty();
     }
 
     @Override
