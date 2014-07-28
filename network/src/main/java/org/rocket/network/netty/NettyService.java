@@ -14,7 +14,10 @@ import org.fungsi.concurrent.Future;
 import org.fungsi.concurrent.Futures;
 import org.rocket.Service;
 import org.rocket.ServiceContext;
-import org.rocket.network.*;
+import org.rocket.network.NetworkClient;
+import org.rocket.network.NetworkService;
+import org.rocket.network.event.ConnectEvent;
+import org.rocket.network.event.ReceiveEvent;
 
 import java.util.Optional;
 import java.util.Set;
@@ -117,7 +120,7 @@ final class NettyService extends ChannelInboundHandlerAdapter implements Network
             maxConnectedClients = clients.size();
         }
 
-        eventBus.publishAsync(new Connect.Event(client));
+        eventBus.publishAsync(new ConnectEvent(client, false));
     }
 
     @SuppressWarnings("SuspiciousMethodCalls")
@@ -126,13 +129,13 @@ final class NettyService extends ChannelInboundHandlerAdapter implements Network
         NetworkClient client = ctx.channel().attr(Netty.CLIENT_KEY).get();
         clients.remove(client);
 
-        eventBus.publishAsync(new Disconnect.Event(client));
+        eventBus.publishAsync(new ConnectEvent(client, true));
     }
 
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
         NetworkClient client = ctx.channel().attr(Netty.CLIENT_KEY).get();
 
-        eventBus.publishAsync(new Receive.Event(client, msg));
+        eventBus.publishAsync(new ReceiveEvent(client, msg));
     }
 }
