@@ -23,10 +23,11 @@ import org.rocket.network.event.ReceiveEvent;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 final class NettyService extends ChannelInboundHandlerAdapter implements NetworkService {
 
-    private final EventBus eventBus;
+    private final Supplier<EventBus> eventBusFactory;
     private final ControllerFactory controllerFactory;
     private final Consumer<ServerBootstrap> configuration;
 
@@ -36,8 +37,8 @@ final class NettyService extends ChannelInboundHandlerAdapter implements Network
     private long nextId;
     private volatile int maxConnectedClients;
 
-    NettyService(EventBus eventBus, ControllerFactory controllerFactory, Consumer<ServerBootstrap> configuration) {
-        this.eventBus = eventBus;
+    NettyService(Supplier<EventBus> eventBusFactory, ControllerFactory controllerFactory, Consumer<ServerBootstrap> configuration) {
+        this.eventBusFactory = eventBusFactory;
         this.controllerFactory = controllerFactory;
         this.configuration = configuration;
     }
@@ -84,11 +85,6 @@ final class NettyService extends ChannelInboundHandlerAdapter implements Network
     }
 
     @Override
-    public EventBus getEventBus() {
-        return eventBus;
-    }
-
-    @Override
     public int getActualConnectedClients() {
         return clients.size();
     }
@@ -109,7 +105,7 @@ final class NettyService extends ChannelInboundHandlerAdapter implements Network
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
-        eventBus.publishAsync(new SupervisedEvent(Netty.SUPERVISED_EVENT_NO_INITIAL, cause));
+        eventBusFactory.publishAsync(new SupervisedEvent(Netty.SUPERVISED_EVENT_NO_INITIAL, cause));
     }
 
     @Override
@@ -120,13 +116,13 @@ final class NettyService extends ChannelInboundHandlerAdapter implements Network
 
         Set<Object> controllers = controllerFactory.create(client);
         ctx.channel().attr(Netty.CONTROLLERS_KEY).set(controllers);
-        eventBus.subscribeMany(controllers);
+        eventBusFactory.subscribeMany(controllers);
 
         if (maxConnectedClients < clients.size()) {
             maxConnectedClients = clients.size();
         }
 
-        eventBus.publishAsync(new ConnectEvent(client, false));
+        eventBusFactory.publishAsync(new ConnectEvent(client, false));
     }
 
     @SuppressWarnings("SuspiciousMethodCalls")
@@ -136,15 +132,15 @@ final class NettyService extends ChannelInboundHandlerAdapter implements Network
         clients.remove(client);
 
         Set<Object> controllers = ctx.channel().attr(Netty.CONTROLLERS_KEY).get();
-        eventBus.unsubscribeMany(controllers);
+        eventBusFactory.unsubscribeMany(controllers);
 
-        eventBus.publishAsync(new ConnectEvent(client, true));
+        eventBusFactory.publishAsync(new ConnectEvent(client, true));
     }
 
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
         NetworkClient client = ctx.channel().attr(Netty.CLIENT_KEY).get();
 
-        eventBus.publishAsync(new ReceiveEvent(client, msg));
+        eventBusFactory.publishAsync(new ReceiveEvent(client, msg));
     }
 }

@@ -1,5 +1,6 @@
 package org.rocket.network.netty;
 
+import com.github.blackrush.acara.EventBus;
 import io.netty.channel.Channel;
 import org.fungsi.Unit;
 import org.fungsi.concurrent.Future;
@@ -13,10 +14,17 @@ import java.util.function.Consumer;
 final class NettyClient implements NetworkClient {
     final Channel channel;
     final long id;
+    final EventBus eventBus;
 
-    NettyClient(Channel channel, long id) {
+    NettyClient(Channel channel, long id, EventBus eventBus) {
         this.channel = channel;
         this.id = id;
+        this.eventBus = eventBus;
+    }
+
+    @Override
+    public EventBus getEventBus() {
+        return eventBus;
     }
 
     @Override

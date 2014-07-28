@@ -12,6 +12,7 @@ import org.rocket.network.NetworkService;
 
 import java.util.Set;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 public final class Netty {
     private Netty() {}
@@ -21,7 +22,7 @@ public final class Netty {
     public static final AttributeKey<NetworkClient> CLIENT_KEY = AttributeKey.valueOf(Netty.class.getName() + ".CLIENT_KEY");
     public static final AttributeKey<Set<Object>> CONTROLLERS_KEY = AttributeKey.valueOf(Netty.class.getName() + ".CONTROLLERS_KEY");
 
-    public static NetworkService newService(EventBus eventBus, ControllerFactory controllerFactory, Consumer<ServerBootstrap> configuration) {
+    public static NetworkService newService(Supplier<EventBus> eventBus, ControllerFactory controllerFactory, Consumer<ServerBootstrap> configuration) {
         return new NettyService(eventBus, controllerFactory, configuration);
     }
 
