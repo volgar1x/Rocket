@@ -2,6 +2,7 @@ package org.rocket.network.netty;
 
 import com.github.blackrush.acara.EventBus;
 import io.netty.bootstrap.ServerBootstrap;
+import io.netty.channel.ChannelPipeline;
 import io.netty.util.AttributeKey;
 import org.fungsi.concurrent.Future;
 import org.fungsi.concurrent.Promise;
@@ -14,16 +15,16 @@ import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
-public final class Netty {
-    private Netty() {}
+public final class RocketNetty {
+    private RocketNetty() {}
 
     public static final Object SUPERVISED_EVENT_NO_INITIAL = new Object();
 
-    public static final AttributeKey<NetworkClient> CLIENT_KEY = AttributeKey.valueOf(Netty.class.getName() + ".CLIENT_KEY");
-    public static final AttributeKey<Set<Object>> CONTROLLERS_KEY = AttributeKey.valueOf(Netty.class.getName() + ".CONTROLLERS_KEY");
+    public static final AttributeKey<NetworkClient> CLIENT_KEY = AttributeKey.valueOf(RocketNetty.class.getName() + ".CLIENT_KEY");
+    public static final AttributeKey<Set<Object>> CONTROLLERS_KEY = AttributeKey.valueOf(RocketNetty.class.getName() + ".CONTROLLERS_KEY");
 
-    public static NetworkService newService(Supplier<EventBus> eventBus, ControllerFactory controllerFactory, Consumer<ServerBootstrap> configuration) {
-        return new NettyService(eventBus, controllerFactory, configuration);
+    public static NetworkService newService(Supplier<EventBus> eventBus, ControllerFactory controllerFactory, Consumer<ServerBootstrap> configuration, Consumer<ChannelPipeline> pipelineConfiguration) {
+        return new NettyService(eventBus, controllerFactory, configuration, pipelineConfiguration);
     }
 
     public static <T> Future<T> toFungsi(io.netty.util.concurrent.Future<T> fut) {
