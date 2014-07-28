@@ -2,13 +2,13 @@ package org.rocket.network.netty;
 
 import com.github.blackrush.acara.EventBus;
 import com.github.blackrush.acara.supervisor.event.SupervisedEvent;
+import com.google.common.collect.Sets;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
-import org.apache.mina.util.ConcurrentHashSet;
 import org.fungsi.Unit;
 import org.fungsi.concurrent.Future;
 import org.fungsi.concurrent.Futures;
@@ -47,7 +47,7 @@ final class NettyService extends ChannelInboundHandlerAdapter implements Network
             throw new IllegalStateException();
         }
 
-        clients = new ConcurrentHashSet<>();
+        clients = Sets.newConcurrentHashSet();
         nextId = 0;
         maxConnectedClients = 0;
 
