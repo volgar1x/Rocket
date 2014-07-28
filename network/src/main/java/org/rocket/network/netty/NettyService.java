@@ -120,7 +120,7 @@ final class NettyService extends ChannelInboundHandlerAdapter implements Network
 
         Set<Object> controllers = controllerFactory.create(client);
         ctx.channel().attr(Netty.CONTROLLERS_KEY).set(controllers);
-        controllers.forEach(eventBus::subscribe);
+        eventBus.subscribeMany(controllers);
 
         if (maxConnectedClients < clients.size()) {
             maxConnectedClients = clients.size();
@@ -136,7 +136,7 @@ final class NettyService extends ChannelInboundHandlerAdapter implements Network
         clients.remove(client);
 
         Set<Object> controllers = ctx.channel().attr(Netty.CONTROLLERS_KEY).get();
-        controllers.forEach(eventBus::unsubscribe);
+        eventBus.unsubscribeMany(controllers);
 
         eventBus.publishAsync(new ConnectEvent(client, true));
     }
