@@ -104,43 +104,44 @@ final class NettyService extends ChannelInboundHandlerAdapter implements Network
     }
 
     @Override
-    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
-        eventBusFactory.publishAsync(new SupervisedEvent(Netty.SUPERVISED_EVENT_NO_INITIAL, cause));
-    }
-
-    @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
-        NettyClient client = new NettyClient(ctx.channel(), nextId++);
+        NettyClient client = new NettyClient(ctx.channel(), nextId++, eventBusFactory.get());
         ctx.channel().attr(Netty.CLIENT_KEY).set(client);
-        clients.add(client);
 
         Set<Object> controllers = controllerFactory.create(client);
         ctx.channel().attr(Netty.CONTROLLERS_KEY).set(controllers);
-        eventBusFactory.subscribeMany(controllers);
+
+        clients.add(client);
+        client.getEventBus().subscribeMany(controllers);
 
         if (maxConnectedClients < clients.size()) {
             maxConnectedClients = clients.size();
         }
 
-        eventBusFactory.publishAsync(new ConnectEvent(client, false));
+        client.getEventBus().publishAsync(new ConnectEvent(client, false));
     }
 
     @SuppressWarnings("SuspiciousMethodCalls")
     @Override
     public void channelInactive(ChannelHandlerContext ctx) throws Exception {
         NetworkClient client = ctx.channel().attr(Netty.CLIENT_KEY).get();
-        clients.remove(client);
-
         Set<Object> controllers = ctx.channel().attr(Netty.CONTROLLERS_KEY).get();
-        eventBusFactory.unsubscribeMany(controllers);
 
-        eventBusFactory.publishAsync(new ConnectEvent(client, true));
+        client.getEventBus().publishAsync(new ConnectEvent(client, true));
+
+        client.getEventBus().unsubscribeMany(controllers);
+        clients.remove(client);
     }
 
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
         NetworkClient client = ctx.channel().attr(Netty.CLIENT_KEY).get();
+        client.getEventBus().publishAsync(new ReceiveEvent(client, msg));
+    }
 
-        eventBusFactory.publishAsync(new ReceiveEvent(client, msg));
+    @Override
+    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
+        ctx.channel().attr(Netty.CLIENT_KEY).get()
+                .getEventBus().publishAsync(new SupervisedEvent(Netty.SUPERVISED_EVENT_NO_INITIAL, cause));
     }
 }
