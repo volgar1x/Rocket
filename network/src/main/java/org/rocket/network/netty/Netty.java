@@ -6,9 +6,11 @@ import io.netty.util.AttributeKey;
 import org.fungsi.concurrent.Future;
 import org.fungsi.concurrent.Promise;
 import org.fungsi.concurrent.Promises;
+import org.rocket.network.ControllerFactory;
 import org.rocket.network.NetworkClient;
 import org.rocket.network.NetworkService;
 
+import java.util.Set;
 import java.util.function.Consumer;
 
 public final class Netty {
@@ -17,9 +19,10 @@ public final class Netty {
     public static final Object SUPERVISED_EVENT_NO_INITIAL = new Object();
 
     public static final AttributeKey<NetworkClient> CLIENT_KEY = AttributeKey.valueOf(Netty.class.getName() + ".CLIENT_KEY");
+    public static final AttributeKey<Set<Object>> CONTROLLERS_KEY = AttributeKey.valueOf(Netty.class.getName() + ".CONTROLLERS_KEY");
 
-    public static NetworkService newService(EventBus eventBus, Consumer<ServerBootstrap> configuration) {
-        return new NettyService(eventBus, configuration);
+    public static NetworkService newService(EventBus eventBus, ControllerFactory controllerFactory, Consumer<ServerBootstrap> configuration) {
+        return new NettyService(eventBus, controllerFactory, configuration);
     }
 
     public static <T> Future<T> toFungsi(io.netty.util.concurrent.Future<T> fut) {

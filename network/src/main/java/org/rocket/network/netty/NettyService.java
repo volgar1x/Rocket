@@ -14,6 +14,7 @@ import org.fungsi.concurrent.Future;
 import org.fungsi.concurrent.Futures;
 import org.rocket.Service;
 import org.rocket.ServiceContext;
+import org.rocket.network.ControllerFactory;
 import org.rocket.network.NetworkClient;
 import org.rocket.network.NetworkService;
 import org.rocket.network.event.ConnectEvent;
@@ -26,6 +27,7 @@ import java.util.function.Consumer;
 final class NettyService extends ChannelInboundHandlerAdapter implements NetworkService {
 
     private final EventBus eventBus;
+    private final ControllerFactory controllerFactory;
     private final Consumer<ServerBootstrap> configuration;
 
     private Channel chan;
@@ -34,8 +36,9 @@ final class NettyService extends ChannelInboundHandlerAdapter implements Network
     private long nextId;
     private volatile int maxConnectedClients;
 
-    NettyService(EventBus eventBus, Consumer<ServerBootstrap> configuration) {
+    NettyService(EventBus eventBus, ControllerFactory controllerFactory, Consumer<ServerBootstrap> configuration) {
         this.eventBus = eventBus;
+        this.controllerFactory = controllerFactory;
         this.configuration = configuration;
     }
 
@@ -112,9 +115,12 @@ final class NettyService extends ChannelInboundHandlerAdapter implements Network
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
         NettyClient client = new NettyClient(ctx.channel(), nextId++);
+        ctx.channel().attr(Netty.CLIENT_KEY).set(client);
         clients.add(client);
 
-        ctx.channel().attr(Netty.CLIENT_KEY).set(client);
+        Set<Object> controllers = controllerFactory.create(client);
+        ctx.channel().attr(Netty.CONTROLLERS_KEY).set(controllers);
+        controllers.forEach(eventBus::subscribe);
 
         if (maxConnectedClients < clients.size()) {
             maxConnectedClients = clients.size();
@@ -128,6 +134,9 @@ final class NettyService extends ChannelInboundHandlerAdapter implements Network
     public void channelInactive(ChannelHandlerContext ctx) throws Exception {
         NetworkClient client = ctx.channel().attr(Netty.CLIENT_KEY).get();
         clients.remove(client);
+
+        Set<Object> controllers = ctx.channel().attr(Netty.CONTROLLERS_KEY).get();
+        controllers.forEach(eventBus::unsubscribe);
 
         eventBus.publishAsync(new ConnectEvent(client, true));
     }
