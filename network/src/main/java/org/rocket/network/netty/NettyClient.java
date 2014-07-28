@@ -1,52 +1,74 @@
 package org.rocket.network.netty;
 
 import io.netty.channel.Channel;
-import org.fungsi.concurrent.Timer;
+import org.fungsi.Unit;
+import org.fungsi.concurrent.Future;
+import org.fungsi.concurrent.Futures;
 import org.rocket.network.NetworkClient;
-import org.rocket.network.NetworkCommand;
-import org.rocket.network.Transactional;
+import org.rocket.network.NetworkTransaction;
 
-import java.net.SocketAddress;
-import java.util.Objects;
+import java.util.LinkedList;
 import java.util.function.Consumer;
-import java.util.function.Supplier;
 
-public class NettyClient implements NetworkClient {
-	final Channel channel; // package-private to allow some optimizations
-    final Supplier<Timer> timer;
+final class NettyClient implements NetworkClient {
+    final Channel channel;
+    final long id;
 
-	public NettyClient(Channel channel, Supplier<Timer> timer) {
-        this.channel = Objects.requireNonNull(channel, "channel");
-        this.timer = Objects.requireNonNull(timer, "timer");
+    NettyClient(Channel channel, long id) {
+        this.channel = channel;
+        this.id = id;
     }
 
     @Override
-    public SocketAddress getLocalAddress() {
-        return channel.localAddress();
+    public Future<Unit> write(Object msg) {
+        return Netty.toFungsi(channel.writeAndFlush(msg)).toUnit();
     }
 
     @Override
-    public SocketAddress getRemoteAddress() {
-        return channel.remoteAddress();
+    public Future<Unit> transaction(Consumer<NetworkTransaction> fn) {
+        BufTransaction tx = new BufTransaction();
+        fn.accept(tx);
+
+        return tx.stream()
+                .map(channel::write)
+                .map(Netty::toFungsi)
+                .collect(Futures.collect())
+                .toUnit()
+                .onSuccess(x -> channel.flush())
+                ;
     }
 
     @Override
-	public final NetworkCommand write(Object o) {
-		return new WriteCommand(channel, o, timer);
-	}
+    public Future<Unit> close() {
+        return Netty.toFungsi(channel.close()).toUnit();
+    }
 
-	@Override
-	public final NetworkCommand transaction(Consumer<Transactional> fn) {
-		return new TransactionCommand(channel, fn, timer);
-	}
+    class BufTransaction extends LinkedList<Object> implements NetworkTransaction {
+        @Override
+        public void write(Object msg) {
+            add(msg);
+        }
+    }
 
-	@Override
-	public final NetworkCommand close() {
-		return new CloseCommand(channel, timer);
-	}
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof NettyClient)) return false;
 
-	@Override
-	public String toString() {
-		return channel.toString();
-	}
+        NettyClient that = (NettyClient) o;
+        return id == that.id;
+
+    }
+
+    @Override
+    public int hashCode() {
+        return (int) (id ^ (id >>> 32));
+    }
+
+    @Override
+    public String toString() {
+        return "NettyClient(" +
+                "id=" + id +
+                ')';
+    }
 }

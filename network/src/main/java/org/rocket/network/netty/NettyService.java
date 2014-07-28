@@ -1,180 +1,138 @@
 package org.rocket.network.netty;
 
 import com.github.blackrush.acara.EventBus;
-import com.google.common.collect.ImmutableSet;
+import com.github.blackrush.acara.supervisor.event.SupervisedEvent;
 import io.netty.bootstrap.ServerBootstrap;
-import io.netty.channel.*;
+import io.netty.channel.Channel;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelInboundHandlerAdapter;
+import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
-import io.netty.channel.socket.nio.NioServerSocketChannel;
-import io.netty.util.Attribute;
-import io.netty.util.AttributeKey;
-import io.netty.util.AttributeMap;
-import org.fungsi.concurrent.Timer;
-import org.fungsi.concurrent.Timers;
+import org.apache.mina.util.ConcurrentHashSet;
+import org.fungsi.Unit;
+import org.fungsi.concurrent.Future;
+import org.fungsi.concurrent.Futures;
 import org.rocket.Service;
 import org.rocket.ServiceContext;
-import org.rocket.network.NetworkCommand;
-import org.rocket.network.NetworkService;
-import org.rocket.network.event.ConnectEvent;
-import org.rocket.network.event.DisconnectEvent;
-import org.rocket.network.event.ReceiveEvent;
-import org.rocket.network.event.RecoverEvent;
-import org.slf4j.Logger;
+import org.rocket.network.*;
 
-import java.net.SocketAddress;
-import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.function.BiFunction;
 import java.util.function.Consumer;
-import java.util.stream.Stream;
 
-public class NettyService<C extends NettyClient> implements NetworkService<C> {
-    public static final AttributeKey<Object> CLIENT_ATTR = AttributeKey.valueOf(NettyService.class.getName() + ".CLIENT_ATTR");
+final class NettyService extends ChannelInboundHandlerAdapter implements NetworkService {
 
-    @SuppressWarnings("unchecked")
-    public static <C> Attribute<C> clientAttribute(AttributeMap map) {
-        return (Attribute) map.attr(CLIENT_ATTR);
+    private final EventBus eventBus;
+    private final Consumer<ServerBootstrap> configuration;
+
+    private Channel chan;
+    private EventLoopGroup loop;
+    private Set<NettyClient> clients;
+    private long nextId;
+    private volatile int maxConnectedClients;
+
+    NettyService(EventBus eventBus, Consumer<ServerBootstrap> configuration) {
+        this.eventBus = eventBus;
+        this.configuration = configuration;
     }
 
-	private final ServerBootstrap bootstrap;
-	private final EventLoopGroup boss, worker;
-	private final BiFunction<Channel, NettyService<C>, C> clientFactory;
-	private final EventBus eventBus;
-    private final ScheduledExecutorService scheduler;
-	private final Logger logger;
-	private final Set<C> clients = new HashSet<>();
-
-	private Optional<Channel> server;
-	private int maxConnectedClients;
-
-	public NettyService(BiFunction<Channel, NettyService<C>, C> clientFactory, EventBus eventBus, Consumer<Channel> initializer, SocketAddress localAddr, ScheduledExecutorService scheduler, Logger logger) {
-		this.clientFactory = clientFactory;
-		this.eventBus = eventBus;
-        this.scheduler = scheduler;
-        this.logger = logger;
-
-		this.boss   = new NioEventLoopGroup();
-		this.worker = new NioEventLoopGroup();
-
-		this.bootstrap = new ServerBootstrap()
-			.localAddress(localAddr)
-			.group(boss, worker)
-			.channelFactory(NioServerSocketChannel::new)
-			.childHandler(new ChannelInitializer<Channel>() {
-				protected void initChannel(Channel ch) throws Exception {
-					ch.pipeline().addLast(Clients.class.getName(), new Clients());
-					initializer.accept(ch);
-					ch.pipeline().addLast(Dispatch.class.getName(), new Dispatch());
-				}
-			})
-			;
-	}
-
-	@Override
-	public Optional<Class<? extends Service>> dependsOn() {
-		return Optional.empty();
-	}
-
-    public ScheduledExecutorService getScheduler() {
-        return scheduler;
+    @Override
+    public Optional<Class<? extends Service>> dependsOn() {
+        return Optional.empty();
     }
 
-    public Timer newTimer() {
-        return Timers.wrap(getScheduler());
+    @Override
+    public void start(ServiceContext ctx) {
+        if (chan != null) {
+            throw new IllegalStateException();
+        }
+
+        clients = new ConcurrentHashSet<>();
+        nextId = 0;
+        maxConnectedClients = 0;
+
+        ServerBootstrap sb = new ServerBootstrap();
+        sb.group(loop = new NioEventLoopGroup());
+        sb.childHandler(this);
+        configuration.accept(sb);
+
+        // NOTE(Blackrush): let it crash
+        chan = sb.bind().syncUninterruptibly().channel();
     }
 
-	@Override
-	public void start(ServiceContext ctx) {
-		logger.debug("starting...");
-		server = Optional.of(bootstrap.bind().awaitUninterruptibly().channel());
-		logger.info("started");
-	}
+    @Override
+    public void stop(ServiceContext ctx) {
+        if (chan == null) {
+            throw new IllegalStateException();
+        }
 
-	@Override
-	public void stop(ServiceContext ctx) {
-		logger.debug("stopping...");
-		server.get().close()       .awaitUninterruptibly();
-		worker.shutdownGracefully().awaitUninterruptibly();
-		boss.shutdownGracefully()  .awaitUninterruptibly();
-		logger.info("stopped");
-	}
+        // NOTE(Blackrush): "let it crash" doesn't apply when tearing down services
+        loop.shutdownGracefully().awaitUninterruptibly();
+        chan.close().awaitUninterruptibly();
 
-	@Override
-	public NetworkCommand broadcast(Stream<C> clients, Object o) {
-		return new BroadcastCommand(clients.map(it -> it.channel), o, this::newTimer);
-	}
-
-	@Override
-	public int getActualConnectedClients() {
-		return clients.size();
-	}
-
-	@Override
-	public int getMaxConnectedClients() {
-		return maxConnectedClients;
-	}
-
-	@Override
-	public ImmutableSet<C> getClients() {
-		return ImmutableSet.copyOf(clients);
-	}
-
-	@Override
-	public EventBus getEventBus() {
-		return eventBus;
-	}
-
-	class Clients extends ChannelInboundHandlerAdapter {
-
-		@Override
-		public void channelActive(ChannelHandlerContext ctx) throws Exception {
-			C client = clientFactory.apply(ctx.channel(), NettyService.this);
-			clients.add(client);
-			ctx.channel().attr(CLIENT_ATTR).set(client);
-			int connected = getActualConnectedClients();
-			if (maxConnectedClients < connected) {
-				maxConnectedClients = connected;
-			}
-
-			ctx.fireChannelActive();
-		}
-
-		@Override
-		public void channelInactive(ChannelHandlerContext ctx) throws Exception {
-            ctx.fireChannelInactive();
-
-            C client = NettyService.<C>clientAttribute(ctx.channel()).getAndRemove();
-            clients.remove(client);
-		}
-
+        // cleans up things a little
+        clients.clear();
+        clients = null;
+        loop = null;
+        chan = null;
     }
 
-	class Dispatch extends ChannelInboundHandlerAdapter {
+    @Override
+    public EventBus getEventBus() {
+        return eventBus;
+    }
 
-        @Override
-		public void channelActive(ChannelHandlerContext ctx) throws Exception {
-			C client = NettyService.<C>clientAttribute(ctx.channel()).get();
-			eventBus.publishSync(new ConnectEvent<>(client));
-		}
-		@Override
-		public void channelInactive(ChannelHandlerContext ctx) throws Exception {
-			C client = NettyService.<C>clientAttribute(ctx.channel()).get();
-			eventBus.publishSync(new DisconnectEvent<>(client));
-		}
+    @Override
+    public int getActualConnectedClients() {
+        return clients.size();
+    }
 
-		@Override
-		public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
-			C client = NettyService.<C>clientAttribute(ctx.channel()).get();
-			eventBus.publishSync(new ReceiveEvent<>(client, msg));
-		}
+    @Override
+    public int getMaxConnectedClients() {
+        return maxConnectedClients;
+    }
 
-		@Override
-		public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
-			C client = NettyService.<C>clientAttribute(ctx.channel()).get();
-			eventBus.publishSync(new RecoverEvent<>(client, cause));
-		}
+    @Override
+    public Future<Unit> broadcast(Object msg) {
+        return clients.stream()
+                .map(x -> x.write(msg))
+                .collect(Futures.collect())
+                .toUnit()
+                ;
+    }
 
+    @Override
+    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
+        eventBus.publishAsync(new SupervisedEvent(Netty.SUPERVISED_EVENT_NO_INITIAL, cause));
+    }
+
+    @Override
+    public void channelActive(ChannelHandlerContext ctx) throws Exception {
+        NettyClient client = new NettyClient(ctx.channel(), nextId++);
+        clients.add(client);
+
+        ctx.channel().attr(Netty.CLIENT_KEY).set(client);
+
+        if (maxConnectedClients < clients.size()) {
+            maxConnectedClients = clients.size();
+        }
+
+        eventBus.publishAsync(new Connect.Event(client));
+    }
+
+    @SuppressWarnings("SuspiciousMethodCalls")
+    @Override
+    public void channelInactive(ChannelHandlerContext ctx) throws Exception {
+        NetworkClient client = ctx.channel().attr(Netty.CLIENT_KEY).get();
+        clients.remove(client);
+
+        eventBus.publishAsync(new Disconnect.Event(client));
+    }
+
+    @Override
+    public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
+        NetworkClient client = ctx.channel().attr(Netty.CLIENT_KEY).get();
+
+        eventBus.publishAsync(new Receive.Event(client, msg));
     }
 }
