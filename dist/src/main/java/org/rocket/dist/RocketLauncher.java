@@ -14,8 +14,8 @@ import java.util.stream.Stream;
 
 import static java.util.Objects.requireNonNull;
 
-public final class RocketActivator {
-    private RocketActivator() {}
+public final class RocketLauncher {
+    private RocketLauncher() {}
 
     /**
      * Take off your {@link org.rocket.dist.Rocket}
