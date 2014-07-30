@@ -41,7 +41,7 @@ public final class RocketLauncher {
         requireNonNull(ctx, "ctx");
 
         Services.Graph services = findBindings(ctx.getInjector(), Key.get(Service.class))
-                .map(x -> x.getProvider().get())
+                .<Service>map(x -> x.getProvider().get())
                 .collect(Collectors.collectingAndThen(
                         Collectors.toSet(),
                         Services::createGraph));
