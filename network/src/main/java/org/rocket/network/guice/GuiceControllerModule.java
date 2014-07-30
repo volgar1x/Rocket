@@ -1,9 +1,7 @@
 package org.rocket.network.guice;
 
-import com.google.inject.Injector;
-import com.google.inject.Key;
-import com.google.inject.PrivateBinder;
-import com.google.inject.Provider;
+import com.google.inject.*;
+import com.google.inject.binder.AnnotatedBindingBuilder;
 import com.google.inject.binder.LinkedBindingBuilder;
 import com.google.inject.multibindings.Multibinder;
 import com.google.inject.util.Types;
@@ -53,6 +51,18 @@ public abstract class GuiceControllerModule extends RocketModule {
 
     protected LinkedBindingBuilder<Object> newController() {
         return multibinder.addBinding();
+    }
+
+    protected <T> AnnotatedBindingBuilder<T> newHelper(Class<T> klass) {
+        return theBinder.bind(klass);
+    }
+
+    protected <T> LinkedBindingBuilder<T> newHelper(Key<T> key) {
+        return theBinder.bind(key);
+    }
+
+    protected <T> AnnotatedBindingBuilder<T> newHelper(TypeLiteral<T> type) {
+        return theBinder.bind(type);
     }
 
     private static class Hook implements Provider<NetworkClient>, ControllerFactory {

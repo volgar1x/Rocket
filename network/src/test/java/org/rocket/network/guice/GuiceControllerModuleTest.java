@@ -21,6 +21,11 @@ public class GuiceControllerModuleTest {
     @org.rocket.network.Controller
     public static class Controller {
         @Inject NetworkClient client;
+        @Inject Helper helper;
+    }
+
+    public static class Helper {
+        @Inject NetworkClient client;
     }
 
     @Before
@@ -30,6 +35,7 @@ public class GuiceControllerModuleTest {
                     @Override
                     protected void configure() {
                         newController().to(Controller.class);
+                        newHelper(Helper.class);
                     }
                 }
         );
@@ -54,5 +60,6 @@ public class GuiceControllerModuleTest {
 
         Controller controller = (Controller) controllers.iterator().next();
         assertEquals("controller's client", client, controller.client);
+        assertEquals("controller's helper's client", client, controller.helper.client);
     }
 }
