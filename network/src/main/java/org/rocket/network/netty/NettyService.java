@@ -23,6 +23,7 @@ import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
+@ChannelHandler.Sharable // srsly netty????
 final class NettyService extends ChannelInboundHandlerAdapter implements NetworkService {
 
     private final Supplier<EventBus> eventBusFactory;
