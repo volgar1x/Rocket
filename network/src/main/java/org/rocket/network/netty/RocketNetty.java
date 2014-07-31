@@ -1,6 +1,7 @@
 package org.rocket.network.netty;
 
 import com.github.blackrush.acara.EventBus;
+import io.netty.bootstrap.Bootstrap;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelPipeline;
 import io.netty.util.AttributeKey;
@@ -9,6 +10,7 @@ import org.fungsi.concurrent.Promise;
 import org.fungsi.concurrent.Promises;
 import org.rocket.network.ControllerFactory;
 import org.rocket.network.NetworkClient;
+import org.rocket.network.NetworkClientService;
 import org.rocket.network.NetworkService;
 import org.slf4j.Logger;
 
@@ -26,6 +28,10 @@ public final class RocketNetty {
 
     public static NetworkService newService(Supplier<EventBus> eventBus, ControllerFactory controllerFactory, Consumer<ServerBootstrap> configuration, Consumer<ChannelPipeline> pipelineConfiguration, Logger logger) {
         return new NettyService(eventBus, controllerFactory, configuration, pipelineConfiguration, logger);
+    }
+
+    public static NetworkClientService newClientService(EventBus eventBus, ControllerFactory controllerFactory, Consumer<Bootstrap> configuration, Consumer<ChannelPipeline> pipelineConfiguration, Logger logger) {
+        return new NettyClientService(eventBus, controllerFactory, configuration, pipelineConfiguration, logger);
     }
 
     public static <T> Future<T> toFungsi(io.netty.util.concurrent.Future<T> fut) {
