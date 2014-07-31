@@ -16,6 +16,7 @@ import org.rocket.network.NetworkClient;
 import org.rocket.network.NetworkService;
 import org.rocket.network.event.ConnectEvent;
 import org.rocket.network.event.ReceiveEvent;
+import org.slf4j.Logger;
 
 import java.util.Optional;
 import java.util.Set;
@@ -28,6 +29,7 @@ final class NettyService extends ChannelInboundHandlerAdapter implements Network
     private final ControllerFactory controllerFactory;
     private final Consumer<ServerBootstrap> configuration;
     private final Consumer<ChannelPipeline> pipelineConfiguration;
+    private final Logger logger;
 
     private Channel chan;
     private EventLoopGroup boss, children;
@@ -35,11 +37,12 @@ final class NettyService extends ChannelInboundHandlerAdapter implements Network
     private long nextId;
     private volatile int maxConnectedClients;
 
-    NettyService(Supplier<EventBus> eventBusFactory, ControllerFactory controllerFactory, Consumer<ServerBootstrap> configuration, Consumer<ChannelPipeline> pipelineConfiguration) {
+    NettyService(Supplier<EventBus> eventBusFactory, ControllerFactory controllerFactory, Consumer<ServerBootstrap> configuration, Consumer<ChannelPipeline> pipelineConfiguration, Logger logger) {
         this.eventBusFactory = eventBusFactory;
         this.controllerFactory = controllerFactory;
         this.configuration = configuration;
         this.pipelineConfiguration = pipelineConfiguration;
+        this.logger = logger;
     }
 
     @Override
@@ -52,6 +55,8 @@ final class NettyService extends ChannelInboundHandlerAdapter implements Network
         if (chan != null) {
             throw new IllegalStateException();
         }
+
+        logger.debug("starting");
 
         boss = new NioEventLoopGroup();
         children = new NioEventLoopGroup();
@@ -71,6 +76,8 @@ final class NettyService extends ChannelInboundHandlerAdapter implements Network
 
         // NOTE(Blackrush): let it crash
         chan = sb.bind().syncUninterruptibly().channel();
+
+        logger.debug("now listening on {}", chan.localAddress());
     }
 
     @Override
@@ -78,6 +85,8 @@ final class NettyService extends ChannelInboundHandlerAdapter implements Network
         if (chan == null) {
             throw new IllegalStateException();
         }
+
+        logger.debug("stopping");
 
         // NOTE(Blackrush): "let it crash" doesn't apply when tearing down services
         children.shutdownGracefully().awaitUninterruptibly();
