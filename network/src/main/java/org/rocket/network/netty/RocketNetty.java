@@ -34,7 +34,13 @@ public final class RocketNetty {
 
     public static <T> Future<T> toFungsiDownstream(io.netty.util.concurrent.Future<T> fut) {
         Promise<T> pr = Promises.create();
-        fut.addListener(f -> pr.complete(fut.getNow()));
+        fut.addListener(f -> {
+            if (f.isSuccess()) {
+                pr.complete(fut.getNow());
+            } else {
+                pr.fail(f.cause());
+            }
+        });
         return pr;
     }
 

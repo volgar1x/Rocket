@@ -29,7 +29,8 @@ final class NettyClient implements NetworkClient {
 
     @Override
     public Future<Unit> write(Object msg) {
-        return RocketNetty.toFungsi(channel.writeAndFlush(msg)).toUnit();
+        channel.writeAndFlush(msg);
+        return Futures.unit();
     }
 
     @Override
@@ -37,13 +38,10 @@ final class NettyClient implements NetworkClient {
         BufTransaction tx = new BufTransaction();
         fn.accept(tx);
 
-        return tx.stream()
-                .map(channel::write)
-                .map(RocketNetty::toFungsi)
-                .collect(Futures.collect())
-                .toUnit()
-                .onSuccess(x -> channel.flush())
-                ;
+        tx.forEach(channel::write);
+        channel.flush();
+
+        return Futures.unit();
     }
 
     @Override
