@@ -1,11 +1,7 @@
 package org.rocket.network.guice;
 
 import com.google.inject.*;
-import com.google.inject.binder.AnnotatedBindingBuilder;
-import com.google.inject.binder.LinkedBindingBuilder;
 import com.google.inject.multibindings.Multibinder;
-import com.google.inject.util.Types;
-import org.rocket.guice.RocketModule;
 import org.rocket.network.Controller;
 import org.rocket.network.ControllerFactory;
 import org.rocket.network.NetworkClient;
@@ -13,19 +9,17 @@ import org.rocket.network.NetworkClient;
 import javax.inject.Inject;
 import java.util.Set;
 
-public abstract class GuiceControllerModule extends RocketModule {
-    @SuppressWarnings("unchecked")
-    private static final Key<Set<Object>> CONTROLLERS_KEY = (Key<Set<Object>>) Key.get(Types.setOf(Object.class), Controller.class);
+public abstract class ControllerModule extends BaseControllerModule {
 
     private final Key<NetworkClient> clientKey;
     private PrivateBinder theBinder;
     private Multibinder<Object> multibinder;
 
-    public GuiceControllerModule(Key<NetworkClient> clientKey) {
+    public ControllerModule(Key<NetworkClient> clientKey) {
         this.clientKey = clientKey;
     }
 
-    public GuiceControllerModule() {
+    public ControllerModule() {
         this(Key.get(NetworkClient.class));
     }
 
@@ -38,7 +32,7 @@ public abstract class GuiceControllerModule extends RocketModule {
 
     @Override
     protected void before() {
-        theBinder = newPrivateBinder();
+        theBinder = binder().newPrivateBinder();
         multibinder = Multibinder.newSetBinder(theBinder, Object.class, Controller.class);
     }
 
@@ -49,20 +43,14 @@ public abstract class GuiceControllerModule extends RocketModule {
         theBinder = null;
     }
 
-    protected LinkedBindingBuilder<Object> newController() {
-        return multibinder.addBinding();
+    @Override
+    protected Binder controllerBinder() {
+        return theBinder;
     }
 
-    protected <T> AnnotatedBindingBuilder<T> newHelper(Class<T> klass) {
-        return theBinder.bind(klass);
-    }
-
-    protected <T> LinkedBindingBuilder<T> newHelper(Key<T> key) {
-        return theBinder.bind(key);
-    }
-
-    protected <T> AnnotatedBindingBuilder<T> newHelper(TypeLiteral<T> type) {
-        return theBinder.bind(type);
+    @Override
+    protected Multibinder<Object> controllerMultibinder() {
+        return multibinder;
     }
 
     private static class Hook implements Provider<NetworkClient>, ControllerFactory {

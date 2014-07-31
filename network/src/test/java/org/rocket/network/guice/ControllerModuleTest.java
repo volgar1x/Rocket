@@ -14,7 +14,7 @@ import java.util.Set;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
 
-public class GuiceControllerModuleTest {
+public class ControllerModuleTest {
 
     @Inject ControllerFactory factory;
 
@@ -31,7 +31,7 @@ public class GuiceControllerModuleTest {
     @Before
     public void setUp() throws Exception {
         Injector injector = Guice.createInjector(
-                new GuiceControllerModule() {
+                new ControllerModule() {
                     @Override
                     protected void configure() {
                         newController().to(Controller.class);
