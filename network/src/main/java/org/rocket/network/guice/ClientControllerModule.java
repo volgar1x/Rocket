@@ -2,8 +2,8 @@ package org.rocket.network.guice;
 
 import com.google.inject.Binder;
 import com.google.inject.Inject;
-import com.google.inject.Injector;
 import com.google.inject.PrivateBinder;
+import com.google.inject.Provider;
 import com.google.inject.multibindings.Multibinder;
 import org.rocket.network.Controller;
 import org.rocket.network.ControllerFactory;
@@ -12,6 +12,7 @@ import org.rocket.network.NetworkClient;
 import java.util.Set;
 
 public abstract class ClientControllerModule extends BaseControllerModule {
+
     private PrivateBinder controllerBinder;
     private Multibinder<Object> controllerMultibinder;
 
@@ -23,13 +24,11 @@ public abstract class ClientControllerModule extends BaseControllerModule {
 
     @Override
     protected void after() {
-        controllerBinder.bind(ControllerFactory.class).to(Hook.class);
+        controllerBinder.bind(ControllerFactory.class).to(TheFactory.class);
         controllerBinder.expose(ControllerFactory.class);
-    }
 
-    @Override
-    protected Multibinder<Object> controllerMultibinder() {
-        return controllerMultibinder;
+        controllerMultibinder = null;
+        controllerBinder = null;
     }
 
     @Override
@@ -37,12 +36,22 @@ public abstract class ClientControllerModule extends BaseControllerModule {
         return controllerBinder;
     }
 
-    static class Hook implements ControllerFactory {
-        @Inject Injector injector;
+    @Override
+    protected Multibinder<Object> controllerMultibinder() {
+        return controllerMultibinder;
+    }
+
+    static class TheFactory implements ControllerFactory {
+        private final Provider<Set<Object>> controllers;
+
+        @Inject
+        TheFactory(@Controller Provider<Set<Object>> controllers) {
+            this.controllers = controllers;
+        }
 
         @Override
         public Set<Object> create(NetworkClient client) {
-            return injector.getInstance(CONTROLLERS_KEY);
+            return controllers.get();
         }
     }
 }
