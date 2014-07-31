@@ -29,6 +29,7 @@ public final class RocketAcara {
         Class<?> klass = listener.getClass();
 
         return Stream.concat(Stream.of(klass.getDeclaredMethods()), Stream.of(klass.getMethods()))
+                .distinct()
                 .flatMap(method -> {
                     boolean disconnecting = false;
 
@@ -48,6 +49,7 @@ public final class RocketAcara {
         Class<?> klass = listener.getClass();
 
         return Stream.concat(Stream.of(klass.getDeclaredMethods()), Stream.of(klass.getMethods()))
+                .distinct()
                 .flatMap(method -> {
                     if (method.isAnnotationPresent(Receive.class)) {
                         return Stream.of(new ListenerMetadata(
