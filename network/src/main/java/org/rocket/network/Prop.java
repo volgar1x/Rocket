@@ -12,6 +12,10 @@ public interface Prop<T> {
 
     <R> Prop<R> map(Function<T, R> fn);
 
+    default boolean isPresent() {
+        return tryGet().isPresent();
+    }
+
     default T get() {
         return tryGet().get();
     }
