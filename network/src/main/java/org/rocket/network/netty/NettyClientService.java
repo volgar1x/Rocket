@@ -10,9 +10,7 @@ import org.fungsi.concurrent.Future;
 import org.fungsi.concurrent.Futures;
 import org.rocket.Service;
 import org.rocket.ServiceContext;
-import org.rocket.network.ControllerFactory;
-import org.rocket.network.NetworkClientService;
-import org.rocket.network.NetworkTransaction;
+import org.rocket.network.*;
 import org.rocket.network.event.ConnectEvent;
 import org.rocket.network.event.ReceiveEvent;
 import org.slf4j.Logger;
@@ -21,6 +19,7 @@ import java.util.LinkedList;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
+import java.util.stream.Stream;
 
 final class NettyClientService extends ChannelInboundHandlerAdapter implements NetworkClientService {
     private final EventBus eventBus;
@@ -32,6 +31,7 @@ final class NettyClientService extends ChannelInboundHandlerAdapter implements N
     Channel chan;
     EventLoopGroup worker;
     Set<Object> controllers;
+    HashPropBag props;
 
     NettyClientService(EventBus eventBus, ControllerFactory controllerFactory, Consumer<Bootstrap> configuration, Consumer<ChannelPipeline> pipelineConfiguration, Logger logger) {
         this.eventBus = eventBus;
@@ -54,6 +54,7 @@ final class NettyClientService extends ChannelInboundHandlerAdapter implements N
 
         logger.debug("starting");
 
+        props = new HashPropBag();
         worker = new NioEventLoopGroup();
         controllers = controllerFactory.create(this);
         eventBus.subscribeMany(controllers);
@@ -88,6 +89,7 @@ final class NettyClientService extends ChannelInboundHandlerAdapter implements N
         chan = null;
         worker = null;
         controllers = null;
+        props = null;
     }
 
     @Override
@@ -120,6 +122,26 @@ final class NettyClientService extends ChannelInboundHandlerAdapter implements N
         public void write(Object msg) {
             add(msg);
         }
+    }
+
+    @Override
+    public <T> Prop<T> getProp(PropKey key) {
+        return props.getProp(key);
+    }
+
+    @Override
+    public <T> MutProp<T> getMutProp(PropKey key) {
+        return props.getMutProp(key);
+    }
+
+    @Override
+    public Stream<PropKey> getPresentPropKeys() {
+        return props.getPresentPropKeys();
+    }
+
+    @Override
+    public int getNrPresentProps() {
+        return props.getNrPresentProps();
     }
 
     @Override
