@@ -7,7 +7,7 @@ import com.github.blackrush.acara.dispatch.DispatcherLookup;
 import com.google.inject.Key;
 import org.rocket.network.Connect;
 import org.rocket.network.Disconnect;
-import org.rocket.network.PropAnnotation;
+import org.rocket.network.PropValidation;
 import org.rocket.network.Receive;
 
 import java.lang.annotation.Annotation;
@@ -72,21 +72,21 @@ public final class RocketAcara {
                 });
     }
 
-    public static List<Key<?>> lookupPropAnnotations(AnnotatedElement element) {
+    public static List<Key<?>> lookupPropValidations(AnnotatedElement element) {
         List<Key<?>> keys = new LinkedList<>();
         for (Annotation annotation : element.getAnnotations()) {
-            if (annotation instanceof PropAnnotation) {
-                PropAnnotation propAnnotation = (PropAnnotation) annotation;
-                keys.add(Key.get(propAnnotation.value()));
+            if (annotation instanceof PropValidation) {
+                PropValidation propValidation = (PropValidation) annotation;
+                keys.add(Key.get(propValidation.value()));
             } else {
-                keys.addAll(lookupPropAnnotations(annotation.annotationType()));
+                keys.addAll(lookupPropValidations(annotation.annotationType()));
             }
         }
         return keys;
     }
 
     public static Dispatcher wrapInPropValidatorIfNeeded(Dispatcher dispatcher, AnnotatedElement element) {
-        List<Key<?>> keys = lookupPropAnnotations(element);
+        List<Key<?>> keys = lookupPropValidations(element);
 
         if (keys.isEmpty()) {
             return dispatcher;
