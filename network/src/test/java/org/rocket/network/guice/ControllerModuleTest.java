@@ -5,14 +5,16 @@ import com.google.inject.Injector;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.rocket.network.ControllerFactory;
-import org.rocket.network.NetworkClient;
+import org.rocket.network.*;
 
 import javax.inject.Inject;
+import java.util.Optional;
 import java.util.Set;
 
 import static org.junit.Assert.assertEquals;
+import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class ControllerModuleTest {
 
@@ -22,10 +24,12 @@ public class ControllerModuleTest {
     public static class Controller {
         @Inject NetworkClient client;
         @Inject Helper helper;
+        @Inject Prop<String> ticket;
     }
 
     public static class Helper {
         @Inject NetworkClient client;
+        @Inject MutProp<String> ticket;
     }
 
     @Before
@@ -36,6 +40,7 @@ public class ControllerModuleTest {
                     protected void configure() {
                         newController().to(Controller.class);
                         newHelper(Helper.class);
+                        newProp(String.class);
                     }
                 }
         );
@@ -53,6 +58,7 @@ public class ControllerModuleTest {
         NetworkClient client = mock(NetworkClient.class);
 
         // when
+        when(client.getProp(any())).thenReturn(new DefaultMutProp<>(Optional.empty()));
         Set<Object> controllers = factory.create(client);
 
         // then
@@ -61,5 +67,10 @@ public class ControllerModuleTest {
         Controller controller = (Controller) controllers.iterator().next();
         assertEquals("controller's client", client, controller.client);
         assertEquals("controller's helper's client", client, controller.helper.client);
+        assertEquals("controller's ticket", Optional.<String>empty(), controller.ticket.tryGet());
+        assertEquals("controller's helper's ticket", Optional.<String>empty(), controller.helper.ticket.tryGet());
+        controller.helper.ticket.set("hello, world!");
+        assertEquals("controller's ticket", "hello, world!", controller.ticket.get());
+        assertEquals("controller's helper's ticket", "hello, world!", controller.helper.ticket.get());
     }
 }
