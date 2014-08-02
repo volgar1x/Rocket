@@ -6,7 +6,7 @@ import org.fungsi.concurrent.Future;
 
 import java.util.function.Consumer;
 
-public interface NetworkClient {
+public interface NetworkClient extends PropBag {
     EventBus getEventBus();
 
     Future<Unit> write(Object msg);

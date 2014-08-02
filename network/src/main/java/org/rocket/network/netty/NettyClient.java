@@ -5,16 +5,17 @@ import io.netty.channel.Channel;
 import org.fungsi.Unit;
 import org.fungsi.concurrent.Future;
 import org.fungsi.concurrent.Futures;
-import org.rocket.network.NetworkClient;
-import org.rocket.network.NetworkTransaction;
+import org.rocket.network.*;
 
 import java.util.LinkedList;
 import java.util.function.Consumer;
+import java.util.stream.Stream;
 
 final class NettyClient implements NetworkClient {
     final Channel channel;
     final long id;
     final EventBus eventBus;
+    final HashPropBag props = new HashPropBag();
 
     NettyClient(Channel channel, long id, EventBus eventBus) {
         this.channel = channel;
@@ -57,6 +58,21 @@ final class NettyClient implements NetworkClient {
     }
 
     @Override
+    public <T> Prop<T> getProp(PropKey key) {
+        return props.getProp(key);
+    }
+
+    @Override
+    public <T> MutProp<T> getMutProp(PropKey key) {
+        return props.getMutProp(key);
+    }
+
+    @Override
+    public Stream<PropKey> getPresentPropKeys() {
+        return props.getPresentPropKeys();
+    }
+
+    @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (!(o instanceof NettyClient)) return false;
@@ -74,7 +90,8 @@ final class NettyClient implements NetworkClient {
     @Override
     public String toString() {
         return "NettyClient(" +
-                "id=" + id +
+                "id=" + id + "," +
+                "nr-props=" + props.getNrPresentProps() +
                 ')';
     }
 }
