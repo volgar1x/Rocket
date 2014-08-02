@@ -13,4 +13,8 @@ public interface PropBag {
     default int getNrPresentProps() {
         return (int) getPresentPropKeys().count();
     }
+
+    default boolean isPropPresent(Key<?> key) {
+        return getPresentPropKeys().filter(key::equals).findAny().isPresent();
+    }
 }

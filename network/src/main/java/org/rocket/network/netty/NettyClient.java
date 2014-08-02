@@ -74,6 +74,16 @@ final class NettyClient implements NetworkClient {
     }
 
     @Override
+    public boolean isPropPresent(Key<?> key) {
+        return props.isPropPresent(key);
+    }
+
+    @Override
+    public int getNrPresentProps() {
+        return props.getNrPresentProps();
+    }
+
+    @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (!(o instanceof NettyClient)) return false;

@@ -146,6 +146,11 @@ final class NettyClientService extends ChannelInboundHandlerAdapter implements N
     }
 
     @Override
+    public boolean isPropPresent(Key<?> key) {
+        return props.isPropPresent(key);
+    }
+
+    @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
         eventBus.publishAsync(new ConnectEvent(this, false));
     }

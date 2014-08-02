@@ -46,6 +46,11 @@ public final class HashPropBag implements PropBag {
     }
 
     @Override
+    public boolean isPropPresent(Key<?> key) {
+        return props.containsKey(key);
+    }
+
+    @Override
     public String toString() {
         return getPresentPropKeys()
                 .map(Key::toString)
