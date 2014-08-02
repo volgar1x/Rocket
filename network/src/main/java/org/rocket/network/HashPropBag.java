@@ -1,6 +1,7 @@
 package org.rocket.network;
 
 import com.google.common.collect.Maps;
+import com.google.inject.Key;
 
 import java.util.Map;
 import java.util.Optional;
@@ -9,7 +10,7 @@ import java.util.stream.Stream;
 
 public final class HashPropBag implements PropBag {
 
-    private final Map<PropKey, DefaultMutProp<?>> props;
+    private final Map<Key<?>, DefaultMutProp<?>> props;
 
     public HashPropBag() {
         props = Maps.newHashMap();
@@ -20,22 +21,22 @@ public final class HashPropBag implements PropBag {
     }
 
     @SuppressWarnings("unchecked")
-    private <T> DefaultMutProp<T> read(PropKey key) {
+    private <T> DefaultMutProp<T> read(Key<?> key) {
         return (DefaultMutProp<T>) props.computeIfAbsent(key, x -> new DefaultMutProp<>(Optional.empty()));
     }
 
     @Override
-    public <T> Prop<T> getProp(PropKey key) {
+    public <T> Prop<T> getProp(Key<?> key) {
         return read(key);
     }
 
     @Override
-    public <T> MutProp<T> getMutProp(PropKey key) {
+    public <T> MutProp<T> getMutProp(Key<?> key) {
         return read(key);
     }
 
     @Override
-    public Stream<PropKey> getPresentPropKeys() {
+    public Stream<Key<?>> getPresentPropKeys() {
         return props.keySet().stream();
     }
 
@@ -47,7 +48,7 @@ public final class HashPropBag implements PropBag {
     @Override
     public String toString() {
         return getPresentPropKeys()
-                .map(PropKey::toString)
+                .map(Key::toString)
                 .collect(Collectors.joining(", "));
     }
 }

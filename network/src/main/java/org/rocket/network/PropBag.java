@@ -1,12 +1,14 @@
 package org.rocket.network;
 
+import com.google.inject.Key;
+
 import java.util.stream.Stream;
 
 public interface PropBag {
-    Stream<PropKey> getPresentPropKeys();
+    Stream<Key<?>> getPresentPropKeys();
 
-    <T> Prop<T> getProp(PropKey key);
-    <T> MutProp<T> getMutProp(PropKey key);
+    <T> Prop<T> getProp(Key<?> key);
+    <T> MutProp<T> getMutProp(Key<?> key);
 
     default int getNrPresentProps() {
         return (int) getPresentPropKeys().count();

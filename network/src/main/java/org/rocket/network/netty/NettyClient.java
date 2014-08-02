@@ -1,6 +1,7 @@
 package org.rocket.network.netty;
 
 import com.github.blackrush.acara.EventBus;
+import com.google.inject.Key;
 import io.netty.channel.Channel;
 import org.fungsi.Unit;
 import org.fungsi.concurrent.Future;
@@ -58,17 +59,17 @@ final class NettyClient implements NetworkClient {
     }
 
     @Override
-    public <T> Prop<T> getProp(PropKey key) {
+    public <T> Prop<T> getProp(Key<?> key) {
         return props.getProp(key);
     }
 
     @Override
-    public <T> MutProp<T> getMutProp(PropKey key) {
+    public <T> MutProp<T> getMutProp(Key<?> key) {
         return props.getMutProp(key);
     }
 
     @Override
-    public Stream<PropKey> getPresentPropKeys() {
+    public Stream<Key<?>> getPresentPropKeys() {
         return props.getPresentPropKeys();
     }
 
