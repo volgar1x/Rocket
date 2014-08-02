@@ -10,7 +10,7 @@ import org.rocket.network.Disconnect;
 import org.rocket.network.PropValidation;
 import org.rocket.network.Receive;
 
-import java.lang.annotation.Annotation;
+import java.lang.annotation.*;
 import java.lang.reflect.AnnotatedElement;
 import java.util.LinkedList;
 import java.util.List;
@@ -72,21 +72,26 @@ public final class RocketAcara {
                 });
     }
 
-    public static List<Key<?>> lookupPropValidations(AnnotatedElement element) {
-        List<Key<?>> keys = new LinkedList<>();
-        for (Annotation annotation : element.getAnnotations()) {
-            if (annotation instanceof PropValidation) {
-                PropValidation propValidation = (PropValidation) annotation;
-                keys.add(Key.get(propValidation.value()));
-            } else {
-                keys.addAll(lookupPropValidations(annotation.annotationType()));
-            }
+    public static List<Validations.Validation> lookupPropValidations(AnnotatedElement element) {
+        List<Validations.Validation> validations = new LinkedList<>();
+
+        for (PropValidation annotation : element.getAnnotationsByType(PropValidation.class)) {
+            validations.add(new Validations.IsPresentValidation(Key.get(annotation.value()), !annotation.present()));
         }
-        return keys;
+
+        for (Annotation annotation : element.getAnnotations()) {
+            if (annotation instanceof Documented) continue;
+            if (annotation instanceof Retention) continue;
+            if (annotation instanceof Target) continue;
+            if (annotation instanceof Repeatable) continue;
+            validations.addAll(lookupPropValidations(annotation.annotationType()));
+        }
+
+        return validations;
     }
 
     public static Dispatcher wrapInPropValidatorIfNeeded(Dispatcher dispatcher, AnnotatedElement element) {
-        List<Key<?>> keys = lookupPropValidations(element);
+        List<Validations.Validation> keys = lookupPropValidations(element);
 
         if (keys.isEmpty()) {
             return dispatcher;

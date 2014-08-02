@@ -1,7 +1,6 @@
 package org.rocket.network.acara;
 
 import com.github.blackrush.acara.dispatch.Dispatcher;
-import com.google.inject.Key;
 import org.fungsi.Either;
 import org.rocket.network.NetworkClient;
 import org.rocket.network.event.NetworkEvent;
@@ -10,20 +9,20 @@ import java.util.List;
 
 final class RocketPropValidatorDispatcher implements Dispatcher {
     private final Dispatcher dispatcher;
-    private final List<Key<?>> keys;
+    private final List<Validations.Validation> validations;
 
-    public RocketPropValidatorDispatcher(Dispatcher dispatcher, List<Key<?>> keys) {
+    public RocketPropValidatorDispatcher(Dispatcher dispatcher, List<Validations.Validation> validations) {
         this.dispatcher = dispatcher;
-        this.keys = keys;
+        this.validations = validations;
     }
 
     @Override
     public Either<Object, Throwable> dispatch(Object listener, Object o) {
         NetworkEvent event = (NetworkEvent) o;
         NetworkClient client = event.getClient();
-        for (Key<?> key : keys) {
-            if (!client.isPropPresent(key)) {
-                throw new IllegalStateException("property " + key + " must be present");
+        for (Validations.Validation validation : validations) {
+            if (!validation.validate(client)) {
+                throw new IllegalStateException(validation.describe());
             }
         }
 
