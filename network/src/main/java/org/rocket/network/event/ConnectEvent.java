@@ -2,17 +2,12 @@ package org.rocket.network.event;
 
 import org.rocket.network.NetworkClient;
 
-public final class ConnectEvent {
-    private final NetworkClient client;
+public final class ConnectEvent extends NetworkEvent {
     private final boolean disconnecting;
 
     public ConnectEvent(NetworkClient client, boolean disconnecting) {
-        this.client = client;
+        super(client);
         this.disconnecting = disconnecting;
-    }
-
-    public NetworkClient getClient() {
-        return client;
     }
 
     public boolean isDisconnecting() {
