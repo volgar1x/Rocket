@@ -58,7 +58,7 @@ public class ControllerModuleTest {
         NetworkClient client = mock(NetworkClient.class);
 
         // when
-        when(client.getProp(any())).thenReturn(new DefaultMutProp<>(Optional.empty()));
+        when(client.getMutProp(any())).thenReturn(new DefaultMutProp<>(Optional.empty()));
         Set<Object> controllers = factory.create(client);
 
         // then
