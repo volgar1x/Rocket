@@ -23,7 +23,7 @@ final class RocketPropValidatorDispatcher implements Dispatcher {
         NetworkClient client = event.getClient();
         for (Key<?> key : keys) {
             if (!client.isPropPresent(key)) {
-                throw new IllegalStateException("property " + key + " is not present");
+                throw new IllegalStateException("property " + key + " must be present");
             }
         }
 
