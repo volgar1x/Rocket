@@ -47,7 +47,8 @@ public final class HashPropBag implements PropBag {
 
     @Override
     public boolean isPropPresent(Key<?> key) {
-        return props.containsKey(key);
+        DefaultMutProp<?> prop = props.get(key);
+        return prop != null && prop.isPresent();
     }
 
     @Override

@@ -15,6 +15,11 @@ public interface PropBag {
     }
 
     default boolean isPropPresent(Key<?> key) {
-        return getPresentPropKeys().filter(key::equals).findAny().isPresent();
+        return getPresentPropKeys()
+                .filter(key::equals)
+                .map(this::getProp)
+                .filter(Prop::isPresent)
+                .findAny()
+                .isPresent();
     }
 }
