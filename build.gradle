@@ -87,3 +87,9 @@ subprojects {
 task wrapper(type: Wrapper) {
     gradleVersion = '1.10'
 }
+
+task javadocAll(type: Javadoc) {
+    source subprojects.collect { it.sourceSets.main.allJava }
+    classpath = files(subprojects.collect { it.sourceSets.main.compileClasspath })
+    destinationDir = file("${buildDir}/docs/javadoc")
+}
