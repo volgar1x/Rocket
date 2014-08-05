@@ -159,6 +159,7 @@ final class NettyService extends ChannelInboundHandlerAdapter implements Network
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
+        logger.error("exception caught", cause);
         ctx.channel().attr(RocketNetty.CLIENT_KEY).get()
                 .getEventBus().publishAsync(new SupervisedEvent(RocketNetty.SUPERVISED_EVENT_NO_INITIAL, cause));
     }
