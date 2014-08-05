@@ -90,21 +90,27 @@ public final class RocketAcara {
         return validations;
     }
 
-    public static Dispatcher wrapInPropValidatorIfNeeded(Dispatcher dispatcher, AnnotatedElement element) {
-        List<Validations.Validation> keys = lookupPropValidations(element);
+    public static Dispatcher wrapInPropValidatorIfNeeded(Dispatcher dispatcher, ListenerMetadata listener) {
+        List<Validations.Validation> keys = lookupPropValidations(listener.getListenerMethod());
 
-        if (keys.isEmpty()) {
-            return dispatcher;
+        if (!keys.isEmpty()) {
+            return new RocketPropValidatorDispatcher(dispatcher, keys);
         }
 
-        return new RocketPropValidatorDispatcher(dispatcher, keys);
+        keys = lookupPropValidations(listener.getListenerClass());
+
+        if (!keys.isEmpty()) {
+            return new RocketPropValidatorDispatcher(dispatcher, keys);
+        }
+
+        return dispatcher;
     }
 
     public static DispatcherLookup wrapInPropValidatorIfNeeded(DispatcherLookup lookup) {
         return lookup.bind((listener, dispatcher) ->
             Optional.of(wrapInPropValidatorIfNeeded(
                 dispatcher,
-                listener.getListenerMethod()
+                listener
             ))
         );
     }
