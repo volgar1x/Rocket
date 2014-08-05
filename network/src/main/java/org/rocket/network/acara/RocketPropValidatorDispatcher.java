@@ -8,8 +8,8 @@ import org.rocket.network.event.NetworkEvent;
 import java.util.List;
 
 final class RocketPropValidatorDispatcher implements Dispatcher {
-    private final Dispatcher dispatcher;
-    private final List<Validations.Validation> validations;
+    final Dispatcher dispatcher;
+    final List<Validations.Validation> validations;
 
     public RocketPropValidatorDispatcher(Dispatcher dispatcher, List<Validations.Validation> validations) {
         this.dispatcher = dispatcher;
