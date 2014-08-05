@@ -1,1 +1,1 @@
-include 'api', 'network', 'dist'
+include 'api', 'network', 'dist', 'network-netty'

@@ -1,0 +1,4 @@
+dependencies {
+    compile project(':network')
+    compile 'io.netty:netty-transport:4.0.21.Final'
+}
