@@ -1,28 +1,37 @@
 package org.rocket.network.guice;
 
 import com.google.inject.AbstractModule;
-import com.google.inject.Inject;
 import com.google.inject.Provider;
 import org.rocket.network.Controller;
 import org.rocket.network.ControllerFactory;
 import org.rocket.network.NetworkClient;
 
+import java.lang.annotation.Annotation;
 import java.util.Set;
 
 public final class ControllerFactoryModule extends AbstractModule {
+    private final Class<? extends Annotation> controllerAnnotation;
+
+    public ControllerFactoryModule(Class<? extends Annotation> controllerAnnotation) {
+        this.controllerAnnotation = controllerAnnotation;
+    }
+
+    public ControllerFactoryModule() {
+        this(Controller.class);
+    }
+
     @Override
     protected void configure() {
-        bind(Hook.class).asEagerSingleton();
-        bind(NetworkClient.class).toProvider(Hook.class);
-        bind(ControllerFactory.class).to(Hook.class);
+        Hook hook = new Hook(getProvider(RocketGuiceUtil.controllersKeyFor(controllerAnnotation)));
+        bind(NetworkClient.class).toProvider(hook);
+        bind(ControllerFactory.class).toInstance(hook);
     }
 
     private static class Hook implements Provider<NetworkClient>, ControllerFactory {
         private final ThreadLocal<NetworkClient> client = new ThreadLocal<>();
         private final Provider<Set<Object>> controllers;
 
-        @Inject
-        Hook(@Controller Provider<Set<Object>> controllers) {
+        Hook(Provider<Set<Object>> controllers) {
             this.controllers = controllers;
         }
 

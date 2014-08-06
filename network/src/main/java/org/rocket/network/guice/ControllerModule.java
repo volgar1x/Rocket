@@ -11,13 +11,25 @@ import org.rocket.network.NetworkClient;
 
 import java.lang.annotation.Annotation;
 
+import static java.util.Objects.requireNonNull;
+
 public abstract class ControllerModule extends RocketModule {
+
+    private final Class<? extends Annotation> controllerAnnotation;
 
     private Multibinder<Object> controllerMultibinder;
 
+    protected ControllerModule(Class<? extends Annotation> controllerAnnotation) {
+        this.controllerAnnotation = requireNonNull(controllerAnnotation, "controllerAnnotation");
+    }
+
+    protected ControllerModule() {
+        this(Controller.class);
+    }
+
     @Override
     protected void before() {
-        controllerMultibinder = Multibinder.newSetBinder(binder(), Object.class, Controller.class);
+        controllerMultibinder = Multibinder.newSetBinder(binder(), Object.class, controllerAnnotation);
     }
 
     @Override
