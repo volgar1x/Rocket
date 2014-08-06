@@ -8,6 +8,7 @@ import org.junit.Test;
 import org.rocket.network.*;
 
 import javax.inject.Inject;
+import java.util.Iterator;
 import java.util.Optional;
 import java.util.Set;
 
@@ -27,6 +28,12 @@ public class ControllerModuleTest {
         @Inject Prop<String> ticket;
     }
 
+    @org.rocket.network.Controller
+    public static class AnotherController {
+        @Inject NetworkClient client;
+        @Inject MutProp<String> ticket;
+    }
+
     public static class Helper {
         @Inject NetworkClient client;
         @Inject MutProp<String> ticket;
@@ -35,12 +42,18 @@ public class ControllerModuleTest {
     @Before
     public void setUp() throws Exception {
         Injector injector = Guice.createInjector(
+                new ControllerFactoryModule(),
                 new ControllerModule() {
                     @Override
                     protected void configure() {
                         newController().to(Controller.class);
-                        newHelper(Helper.class);
                         newProp(String.class);
+                    }
+                },
+                new ControllerModule() {
+                    @Override
+                    protected void configure() {
+                        newController().to(AnotherController.class);
                     }
                 }
         );
@@ -62,9 +75,11 @@ public class ControllerModuleTest {
         Set<Object> controllers = factory.create(client);
 
         // then
-        assertEquals("number of controllers", 1, controllers.size());
+        assertEquals("number of controllers", 2, controllers.size());
 
-        Controller controller = (Controller) controllers.iterator().next();
+        Iterator<Object> it = controllers.iterator();
+
+        Controller controller = (Controller) it.next();
         assertEquals("controller's client", client, controller.client);
         assertEquals("controller's helper's client", client, controller.helper.client);
         assertEquals("controller's ticket", Optional.<String>empty(), controller.ticket.tryGet());
@@ -72,5 +87,9 @@ public class ControllerModuleTest {
         controller.helper.ticket.set("hello, world!");
         assertEquals("controller's ticket", "hello, world!", controller.ticket.get());
         assertEquals("controller's helper's ticket", "hello, world!", controller.helper.ticket.get());
+
+        AnotherController anotherController = (AnotherController) it.next();
+        assertEquals("another controller's client", client, anotherController.client);
+        assertEquals("another controller's ticket", "hello, world!", anotherController.ticket.get());
     }
 }

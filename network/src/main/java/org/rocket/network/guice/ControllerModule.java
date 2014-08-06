@@ -1,75 +1,64 @@
 package org.rocket.network.guice;
 
-import com.google.inject.*;
+import com.google.inject.Key;
+import com.google.inject.Provider;
+import com.google.inject.binder.LinkedBindingBuilder;
 import com.google.inject.multibindings.Multibinder;
+import org.rocket.guice.RocketModule;
 import org.rocket.network.Controller;
-import org.rocket.network.ControllerFactory;
+import org.rocket.network.MutProp;
 import org.rocket.network.NetworkClient;
 
-import javax.inject.Inject;
-import java.util.Set;
+import java.lang.annotation.Annotation;
 
-public abstract class ControllerModule extends BaseControllerModule {
+public abstract class ControllerModule extends RocketModule {
 
-    private final Key<NetworkClient> clientKey;
-    private PrivateBinder theBinder;
-    private Multibinder<Object> multibinder;
-
-    public ControllerModule(Key<NetworkClient> clientKey) {
-        this.clientKey = clientKey;
-    }
-
-    public ControllerModule() {
-        this(Key.get(NetworkClient.class));
-    }
-
-    private void configureControllers() {
-        theBinder.bind(Hook.class).asEagerSingleton();
-        theBinder.bind(clientKey).toProvider(Hook.class);
-        theBinder.bind(ControllerFactory.class).to(Hook.class);
-        theBinder.expose(ControllerFactory.class);
-    }
+    private Multibinder<Object> controllerMultibinder;
 
     @Override
     protected void before() {
-        theBinder = binder().newPrivateBinder();
-        multibinder = Multibinder.newSetBinder(theBinder, Object.class, Controller.class);
+        controllerMultibinder = Multibinder.newSetBinder(binder(), Object.class, Controller.class);
     }
 
     @Override
     protected void after() {
-        configureControllers();
-        multibinder = null;
-        theBinder = null;
+        controllerMultibinder = null;
     }
 
-    @Override
-    protected Binder controllerBinder() {
-        return theBinder;
+    protected LinkedBindingBuilder<Object> newController() {
+        return controllerMultibinder.addBinding();
     }
 
-    @Override
-    protected Multibinder<Object> controllerMultibinder() {
-        return multibinder;
+    protected void newProp(Key<?> key) {
+        PropProvider provider = new PropProvider(key, getProvider(NetworkClient.class));
+        bind(RocketGuiceUtil.wrapProp(key)).toProvider(provider);
+        bind(RocketGuiceUtil.wrapMutProp(key)).toProvider(provider);
     }
 
-    private static class Hook implements Provider<NetworkClient>, ControllerFactory {
-        @Inject private Injector injector;
-        final ThreadLocal<NetworkClient> client = new ThreadLocal<>();
+    protected void newProp(Class<?> klass) {
+        newProp(Key.get(klass));
+    }
 
-        @Override
-        public NetworkClient get() {
-            return client.get();
+    protected void newProp(Class<?> klass, Class<? extends Annotation> annotationClass) {
+        newProp(Key.get(klass, annotationClass));
+    }
+
+    protected void newProp(Class<?> klass, Annotation annotation) {
+        newProp(Key.get(klass, annotation));
+    }
+
+    private static class PropProvider implements Provider<MutProp<?>> {
+        private final Key<?> key;
+        private final Provider<NetworkClient> client;
+
+        private PropProvider(Key<?> key, Provider<NetworkClient> client) {
+            this.key = key;
+            this.client = client;
         }
 
         @Override
-        public synchronized Set<Object> create(NetworkClient client) {
-            this.client.set(client);
-            try {
-                return injector.getInstance(CONTROLLERS_KEY);
-            } finally {
-                this.client.remove();
-            }
+        public MutProp<?> get() {
+            return client.get().getMutProp(key);
         }
     }
 }
