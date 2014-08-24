@@ -28,7 +28,7 @@ subprojects {
     targetCompatibility = 1.8
 
     dependencies {
-        compile 'org.fungsi:fungsi-core:1.1'
+        compile 'org.fungsi:fungsi-core:1.1.1'
         compile 'org.slf4j:slf4j-api:1.7.7'
         compile 'com.google.guava:guava:17.0'
         compile 'com.google.inject:guice:3.0'
