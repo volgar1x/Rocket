@@ -1,14 +1,12 @@
 package org.rocket.dist;
 
-import com.google.inject.Binding;
-import com.google.inject.Injector;
-import com.google.inject.Key;
-import com.google.inject.internal.util.$ComputationException;
-import org.fungsi.Throwables;
+import com.google.inject.*;
+import com.google.inject.spi.Message;
 import org.rocket.Service;
 import org.rocket.ServiceContext;
 import org.rocket.Services;
 
+import java.util.Collection;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -27,8 +25,10 @@ public final class RocketLauncher {
 
         try {
             run(rocket.getServiceContext());
-        } catch ($ComputationException e) {
-            throw Throwables.propagate(getRootCause(e));
+        } catch (CreationException e) {
+            printGuiceMessages(e.getErrorMessages());
+        } catch (ProvisionException e) {
+            printGuiceMessages(e.getErrorMessages());
         }
     }
 
@@ -54,11 +54,19 @@ public final class RocketLauncher {
         Runtime.getRuntime().addShutdownHook(new Thread(() -> folded.stop(ctx)));
     }
 
-    private static Throwable getRootCause(Throwable t) {
-        if (t.getCause() == null) {
-            return t;
+    private static void printGuiceMessages(Collection<Message> messages) {
+        for (Message message : messages) {
+            System.err.println(message.getMessage());
+
+            for (Object source : message.getSources()) {
+                System.err.println("  -> " + source);
+            }
+
+            Throwable cause = message.getCause();
+            if (cause != null) {
+                cause.printStackTrace(System.err);
+            }
         }
-        return t.getCause();
     }
 
     private static boolean isExtending(Key<?> parent, Key<?> child) {
