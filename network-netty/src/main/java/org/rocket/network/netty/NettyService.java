@@ -1,6 +1,6 @@
 package org.rocket.network.netty;
 
-import com.github.blackrush.acara.EventBus;
+import com.github.blackrush.acara.EventBusBuilder;
 import com.github.blackrush.acara.supervisor.event.SupervisedEvent;
 import com.google.common.collect.Sets;
 import io.netty.bootstrap.ServerBootstrap;
@@ -22,12 +22,11 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
-import java.util.function.Supplier;
 
 @ChannelHandler.Sharable // srsly netty????
 final class NettyService extends ChannelInboundHandlerAdapter implements NetworkService {
 
-    private final Supplier<EventBus> eventBusFactory;
+    private final EventBusBuilder eventBusBuilder;
     private final ControllerFactory controllerFactory;
     private final Consumer<ServerBootstrap> configuration;
     private final Consumer<ChannelPipeline> pipelineConfiguration;
@@ -39,8 +38,8 @@ final class NettyService extends ChannelInboundHandlerAdapter implements Network
     private AtomicLong nextId;
     private volatile int maxConnectedClients;
 
-    NettyService(Supplier<EventBus> eventBusFactory, ControllerFactory controllerFactory, Consumer<ServerBootstrap> configuration, Consumer<ChannelPipeline> pipelineConfiguration, Logger logger) {
-        this.eventBusFactory = eventBusFactory;
+    NettyService(EventBusBuilder eventBusBuilder, ControllerFactory controllerFactory, Consumer<ServerBootstrap> configuration, Consumer<ChannelPipeline> pipelineConfiguration, Logger logger) {
+        this.eventBusBuilder = eventBusBuilder;
         this.controllerFactory = controllerFactory;
         this.configuration = configuration;
         this.pipelineConfiguration = pipelineConfiguration;
@@ -121,7 +120,7 @@ final class NettyService extends ChannelInboundHandlerAdapter implements Network
 
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
-        NettyClient client = new NettyClient(ctx.channel(), nextId.getAndIncrement(), eventBusFactory.get());
+        NettyClient client = new NettyClient(ctx.channel(), nextId.getAndIncrement(), eventBusBuilder.build());
         ctx.channel().attr(RocketNetty.CLIENT_KEY).set(client);
 
         Set<Object> controllers = controllerFactory.create(client);
