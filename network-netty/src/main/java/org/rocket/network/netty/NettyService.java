@@ -115,11 +115,8 @@ final class NettyService extends ChannelInboundHandlerAdapter implements Network
 
     @Override
     public Future<Unit> broadcast(Object msg) {
-        return clients.stream()
-                .map(x -> x.write(msg))
-                .collect(Futures.collect())
-                .toUnit()
-                ;
+        clients.forEach(client -> client.channel.writeAndFlush(msg));
+        return Futures.unit();
     }
 
     @Override
