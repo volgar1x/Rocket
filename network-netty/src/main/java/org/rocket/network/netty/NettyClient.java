@@ -8,7 +8,6 @@ import org.fungsi.concurrent.Future;
 import org.fungsi.concurrent.Futures;
 import org.rocket.network.*;
 
-import java.util.LinkedList;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
@@ -24,6 +23,8 @@ final class NettyClient implements NetworkClient {
         this.eventBus = eventBus;
     }
 
+
+
     @Override
     public EventBus getEventBus() {
         return eventBus;
@@ -37,10 +38,7 @@ final class NettyClient implements NetworkClient {
 
     @Override
     public Future<Unit> transaction(Consumer<NetworkTransaction> fn) {
-        BufTransaction tx = new BufTransaction();
-        fn.accept(tx);
-
-        tx.forEach(channel::write);
+        fn.accept(channel::write);
         channel.flush();
 
         return Futures.unit();
@@ -49,13 +47,6 @@ final class NettyClient implements NetworkClient {
     @Override
     public Future<Unit> close() {
         return RocketNetty.toFungsi(channel.close()).toUnit();
-    }
-
-    class BufTransaction extends LinkedList<Object> implements NetworkTransaction {
-        @Override
-        public void write(Object msg) {
-            add(msg);
-        }
     }
 
     @Override
