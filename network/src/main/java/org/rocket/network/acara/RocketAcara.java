@@ -1,5 +1,6 @@
 package org.rocket.network.acara;
 
+import com.github.blackrush.acara.ClassListenerMetadataLookup;
 import com.github.blackrush.acara.EventModule;
 import com.github.blackrush.acara.ListenerMetadata;
 import com.github.blackrush.acara.dispatch.Dispatcher;
@@ -25,51 +26,53 @@ public final class RocketAcara {
                 // @Connect @Disconnect
                 .addEventMetadataLookup(RocketBasicEventMetadata::lookup)
                 .addDispatcherLookup(wrapInPropValidatorIfNeeded(RocketBasicDispatcher::lookup))
-                .addMetadataLookup(RocketAcara::lookupBasic)
+                .addMetadataLookup(new BasicLookup())
 
                 // @Receive
                 .addEventMetadataLookup(RocketReceiveEventMetadata::lookup)
                 .addDispatcherLookup(wrapInPropValidatorIfNeeded(RocketReceiveDispatcher::lookup))
-                .addMetadataLookup(RocketAcara::lookupReceive)
+                .addMetadataLookup(new ReceiveLookup())
                 ;
     }
 
-    static Stream<ListenerMetadata> lookupBasic(Object listener) {
-        Class<?> klass = listener.getClass();
+    private static class BasicLookup extends ClassListenerMetadataLookup {
+        @Override
+        protected Stream<ListenerMetadata> lookupClass(Class<?> klass) {
+            return Stream.concat(Stream.of(klass.getDeclaredMethods()), Stream.of(klass.getMethods()))
+                    .distinct()
+                    .flatMap(method -> {
+                        boolean disconnecting = false;
 
-        return Stream.concat(Stream.of(klass.getDeclaredMethods()), Stream.of(klass.getMethods()))
-                .distinct()
-                .flatMap(method -> {
-                    boolean disconnecting = false;
+                        if (method.isAnnotationPresent(Connect.class) || (disconnecting = method.isAnnotationPresent(Disconnect.class))) {
+                            return Stream.of(new ListenerMetadata(
+                                    klass,
+                                    method,
+                                    new RocketBasicEventMetadata(disconnecting)
+                            ));
+                        }
 
-                    if (method.isAnnotationPresent(Connect.class) || (disconnecting = method.isAnnotationPresent(Disconnect.class))) {
-                        return Stream.of(new ListenerMetadata(
-                                klass,
-                                method,
-                                new RocketBasicEventMetadata(disconnecting)
-                        ));
-                    }
-
-                    return Stream.empty();
-                });
+                        return Stream.empty();
+                    });
+        }
     }
 
-    static Stream<ListenerMetadata> lookupReceive(Object listener) {
-        Class<?> klass = listener.getClass();
+    private static class ReceiveLookup extends ClassListenerMetadataLookup {
+        @Override
+        protected Stream<ListenerMetadata> lookupClass(Class<?> klass) {
+            return Stream.concat(Stream.of(klass.getDeclaredMethods()), Stream.of(klass.getMethods()))
+                    .distinct()
+                    .flatMap(method -> {
+                        if (method.isAnnotationPresent(Receive.class)) {
+                            return Stream.of(new ListenerMetadata(
+                                    klass,
+                                    method,
+                                    new RocketReceiveEventMetadata(method.getParameterTypes()[0])
+                            ));
+                        }
 
-        return Stream.concat(Stream.of(klass.getDeclaredMethods()), Stream.of(klass.getMethods()))
-                .distinct()
-                .flatMap(method -> {
-                    if (method.isAnnotationPresent(Receive.class)) {
-                        return Stream.of(new ListenerMetadata(
-                                klass,
-                                method,
-                                new RocketReceiveEventMetadata(method.getParameterTypes()[0])
-                        ));
-                    }
-
-                    return Stream.empty();
-                });
+                        return Stream.empty();
+                    });
+        }
     }
 
     public static List<Validations.Validation> lookupPropValidations(AnnotatedElement element) {
