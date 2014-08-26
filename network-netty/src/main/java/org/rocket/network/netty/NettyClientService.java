@@ -16,7 +16,6 @@ import org.rocket.network.event.ConnectEvent;
 import org.rocket.network.event.ReceiveEvent;
 import org.slf4j.Logger;
 
-import java.util.LinkedList;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
@@ -106,9 +105,7 @@ final class NettyClientService extends ChannelInboundHandlerAdapter implements N
 
     @Override
     public Future<Unit> transaction(Consumer<NetworkTransaction> fn) {
-        Tx tx = new Tx();
-        fn.accept(tx);
-        tx.forEach(chan::write);
+        fn.accept(chan::write);
         chan.flush();
         return Futures.unit();
     }
@@ -116,13 +113,6 @@ final class NettyClientService extends ChannelInboundHandlerAdapter implements N
     @Override
     public Future<Unit> close() {
         return RocketNetty.toFungsi(chan.close()).toUnit();
-    }
-
-    class Tx extends LinkedList<Object> implements NetworkTransaction {
-        @Override
-        public void write(Object msg) {
-            add(msg);
-        }
     }
 
     @Override
