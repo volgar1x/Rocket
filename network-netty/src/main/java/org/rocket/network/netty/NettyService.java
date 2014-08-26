@@ -120,11 +120,13 @@ final class NettyService extends ChannelInboundHandlerAdapter implements Network
 
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
-        NettyClient client = new NettyClient(ctx.channel(), nextId.getAndIncrement(), eventBusBuilder.build());
-        ctx.channel().attr(RocketNetty.CLIENT_KEY).set(client);
+        Channel channel = ctx.channel();
+
+        NettyClient client = new NettyClient(channel, nextId.getAndIncrement(), eventBusBuilder.build());
+        channel.attr(RocketNetty.CLIENT_KEY).set(client);
 
         Set<Object> controllers = controllerFactory.create(client);
-        ctx.channel().attr(RocketNetty.CONTROLLERS_KEY).set(controllers);
+        channel.attr(RocketNetty.CONTROLLERS_KEY).set(controllers);
 
         clients.add(client);
         client.getEventBus().subscribeMany(controllers);
