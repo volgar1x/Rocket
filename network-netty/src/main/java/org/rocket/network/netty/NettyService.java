@@ -79,7 +79,7 @@ final class NettyService extends ChannelInboundHandlerAdapter implements Network
         // NOTE(Blackrush): let it crash
         chan = sb.bind().syncUninterruptibly().channel();
 
-        logger.debug("now listening on {}", chan.localAddress());
+        logger.info("now listening on {}", chan.localAddress());
     }
 
     @Override
