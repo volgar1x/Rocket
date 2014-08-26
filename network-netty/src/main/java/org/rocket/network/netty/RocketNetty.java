@@ -1,6 +1,7 @@
 package org.rocket.network.netty;
 
 import com.github.blackrush.acara.EventBus;
+import com.github.blackrush.acara.EventBusBuilder;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelPipeline;
@@ -16,7 +17,6 @@ import org.slf4j.Logger;
 
 import java.util.Set;
 import java.util.function.Consumer;
-import java.util.function.Supplier;
 
 public final class RocketNetty {
     private RocketNetty() {}
@@ -26,7 +26,7 @@ public final class RocketNetty {
     public static final AttributeKey<NetworkClient> CLIENT_KEY = AttributeKey.valueOf(RocketNetty.class.getName() + ".CLIENT_KEY");
     public static final AttributeKey<Set<Object>> CONTROLLERS_KEY = AttributeKey.valueOf(RocketNetty.class.getName() + ".CONTROLLERS_KEY");
 
-    public static NetworkService newService(Supplier<EventBus> eventBus, ControllerFactory controllerFactory, Consumer<ServerBootstrap> configuration, Consumer<ChannelPipeline> pipelineConfiguration, Logger logger) {
+    public static NetworkService newService(EventBusBuilder eventBus, ControllerFactory controllerFactory, Consumer<ServerBootstrap> configuration, Consumer<ChannelPipeline> pipelineConfiguration, Logger logger) {
         return new NettyService(eventBus, controllerFactory, configuration, pipelineConfiguration, logger);
     }
 
