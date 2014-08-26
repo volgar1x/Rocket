@@ -77,11 +77,10 @@ final class NettyClient implements NetworkClient {
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (!(o instanceof NettyClient)) return false;
+        if (o == null || o.getClass() != NettyClient.class) return false;
 
         NettyClient that = (NettyClient) o;
         return id == that.id;
-
     }
 
     @Override
