@@ -20,6 +20,7 @@ import org.slf4j.Logger;
 
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
@@ -35,7 +36,7 @@ final class NettyService extends ChannelInboundHandlerAdapter implements Network
     private Channel chan;
     private EventLoopGroup boss, children;
     private Set<NettyClient> clients;
-    private long nextId;
+    private AtomicLong nextId;
     private volatile int maxConnectedClients;
 
     NettyService(Supplier<EventBus> eventBusFactory, ControllerFactory controllerFactory, Consumer<ServerBootstrap> configuration, Consumer<ChannelPipeline> pipelineConfiguration, Logger logger) {
@@ -62,7 +63,7 @@ final class NettyService extends ChannelInboundHandlerAdapter implements Network
         boss = new NioEventLoopGroup();
         children = new NioEventLoopGroup();
         clients = Sets.newConcurrentHashSet();
-        nextId = 0;
+        nextId = new AtomicLong(0L);
         maxConnectedClients = 0;
 
         ServerBootstrap sb = new ServerBootstrap();
@@ -123,7 +124,7 @@ final class NettyService extends ChannelInboundHandlerAdapter implements Network
 
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
-        NettyClient client = new NettyClient(ctx.channel(), nextId++, eventBusFactory.get());
+        NettyClient client = new NettyClient(ctx.channel(), nextId.getAndIncrement(), eventBusFactory.get());
         ctx.channel().attr(RocketNetty.CLIENT_KEY).set(client);
 
         Set<Object> controllers = controllerFactory.create(client);
