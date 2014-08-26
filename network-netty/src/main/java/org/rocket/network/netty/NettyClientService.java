@@ -71,7 +71,7 @@ final class NettyClientService extends ChannelInboundHandlerAdapter implements N
         });
 
         chan = bootstrap.connect().syncUninterruptibly().channel();
-        logger.debug("connected to {}", chan.remoteAddress());
+        logger.info("connected to {}", chan.remoteAddress());
     }
 
     @Override
