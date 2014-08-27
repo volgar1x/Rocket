@@ -38,7 +38,11 @@ public final class RocketNetty {
     }
 
     public static NetworkClientService newClientService(EventBus eventBus, ControllerFactory controllerFactory, Consumer<Bootstrap> configuration, Consumer<ChannelPipeline> pipelineConfiguration, Logger logger) {
-        return new NettyClientService(eventBus, controllerFactory, configuration, pipelineConfiguration, logger);
+        return new NettyClientService(eventBus, controllerFactory, NioEventLoopGroup::new, configuration, pipelineConfiguration, logger);
+    }
+
+    public static NetworkClientService newClientService(EventBus eventBus, ControllerFactory controllerFactory, Provider<EventLoopGroup> eventLoopGroupProvider, Consumer<Bootstrap> configuration, Consumer<ChannelPipeline> pipelineConfiguration, Logger logger) {
+        return new NettyClientService(eventBus, controllerFactory, eventLoopGroupProvider, configuration, pipelineConfiguration, logger);
     }
 
     public static <T> Future<T> toFungsi(io.netty.util.concurrent.Future<T> fut) {
