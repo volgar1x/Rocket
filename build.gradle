@@ -5,7 +5,6 @@ buildscript {
     }
 
     dependencies {
-        classpath 'com.jfrog.bintray.gradle:gradle-bintray-plugin:0.3'
     }
 }
 
@@ -18,11 +17,17 @@ subprojects {
     repositories {
         mavenCentral()
         jcenter()
+        maven {
+            url acaraUrl
+            credentials {
+                username acaraUsername
+                password acaraPassword
+            }
+        }
     }
 
     apply plugin: 'java'
     apply plugin: 'maven-publish'
-    apply plugin: 'bintray'
 
     sourceCompatibility = 1.8
     targetCompatibility = 1.8
@@ -67,21 +72,17 @@ subprojects {
                 artifactId = "rocket-${project.name}"
             }
         }
-    }
 
-    bintray {
-        user = hasProperty('bintrayUser') ? bintrayUser : ''
-        key = hasProperty('bintrayKey') ? bintrayKey : ''
-        publications = ['mavenJava']
-
-        pkg {
-            repo = 'maven'
-            name = 'Rocket'
-            licenses = ['MIT']
+        repositories {
+            maven {
+                url rocketUrl
+                credentials {
+                    username rocketUsername
+                    password rocketPassword
+                }
+            }
         }
     }
-
-    bintrayUpload.dependsOn publishToMavenLocal
 }
 
 task wrapper(type: Wrapper) {
