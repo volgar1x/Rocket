@@ -5,7 +5,6 @@ import com.github.blackrush.acara.supervisor.event.SupervisedEvent;
 import com.google.common.collect.Sets;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.*;
-import io.netty.channel.nio.NioEventLoopGroup;
 import org.fungsi.Unit;
 import org.fungsi.concurrent.Future;
 import org.fungsi.concurrent.Futures;
@@ -18,6 +17,7 @@ import org.rocket.network.event.ConnectEvent;
 import org.rocket.network.event.ReceiveEvent;
 import org.slf4j.Logger;
 
+import javax.inject.Provider;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
@@ -28,6 +28,7 @@ final class NettyService extends ChannelInboundHandlerAdapter implements Network
 
     private final EventBusBuilder eventBusBuilder;
     private final ControllerFactory controllerFactory;
+    private final Provider<EventLoopGroup> eventLoopGroupProvider;
     private final Consumer<ServerBootstrap> configuration;
     private final Consumer<ChannelPipeline> pipelineConfiguration;
     private final Logger logger;
@@ -38,9 +39,10 @@ final class NettyService extends ChannelInboundHandlerAdapter implements Network
     private AtomicLong nextId;
     private volatile int maxConnectedClients;
 
-    NettyService(EventBusBuilder eventBusBuilder, ControllerFactory controllerFactory, Consumer<ServerBootstrap> configuration, Consumer<ChannelPipeline> pipelineConfiguration, Logger logger) {
+    NettyService(EventBusBuilder eventBusBuilder, ControllerFactory controllerFactory, Provider<EventLoopGroup> eventLoopGroupProvider, Consumer<ServerBootstrap> configuration, Consumer<ChannelPipeline> pipelineConfiguration, Logger logger) {
         this.eventBusBuilder = eventBusBuilder;
         this.controllerFactory = controllerFactory;
+        this.eventLoopGroupProvider = eventLoopGroupProvider;
         this.configuration = configuration;
         this.pipelineConfiguration = pipelineConfiguration;
         this.logger = logger;
@@ -59,8 +61,8 @@ final class NettyService extends ChannelInboundHandlerAdapter implements Network
 
         logger.debug("starting");
 
-        boss = new NioEventLoopGroup();
-        children = new NioEventLoopGroup();
+        boss = eventLoopGroupProvider.get();
+        children = eventLoopGroupProvider.get();
         clients = Sets.newConcurrentHashSet();
         nextId = new AtomicLong(0L);
         maxConnectedClients = 0;

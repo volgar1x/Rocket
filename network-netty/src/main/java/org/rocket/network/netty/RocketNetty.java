@@ -5,6 +5,8 @@ import com.github.blackrush.acara.EventBusBuilder;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelPipeline;
+import io.netty.channel.EventLoopGroup;
+import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.util.AttributeKey;
 import org.fungsi.concurrent.Future;
 import org.fungsi.concurrent.Promise;
@@ -15,6 +17,7 @@ import org.rocket.network.NetworkClientService;
 import org.rocket.network.NetworkService;
 import org.slf4j.Logger;
 
+import javax.inject.Provider;
 import java.util.Set;
 import java.util.function.Consumer;
 
@@ -27,7 +30,11 @@ public final class RocketNetty {
     public static final AttributeKey<Set<Object>> CONTROLLERS_KEY = AttributeKey.valueOf(RocketNetty.class.getName() + ".CONTROLLERS_KEY");
 
     public static NetworkService newService(EventBusBuilder eventBus, ControllerFactory controllerFactory, Consumer<ServerBootstrap> configuration, Consumer<ChannelPipeline> pipelineConfiguration, Logger logger) {
-        return new NettyService(eventBus, controllerFactory, configuration, pipelineConfiguration, logger);
+        return new NettyService(eventBus, controllerFactory, NioEventLoopGroup::new, configuration, pipelineConfiguration, logger);
+    }
+
+    public static NetworkService newService(EventBusBuilder eventBus, ControllerFactory controllerFactory, Provider<EventLoopGroup> eventLoopGroupProvider, Consumer<ServerBootstrap> configuration, Consumer<ChannelPipeline> pipelineConfiguration, Logger logger) {
+        return new NettyService(eventBus, controllerFactory, eventLoopGroupProvider, configuration, pipelineConfiguration, logger);
     }
 
     public static NetworkClientService newClientService(EventBus eventBus, ControllerFactory controllerFactory, Consumer<Bootstrap> configuration, Consumer<ChannelPipeline> pipelineConfiguration, Logger logger) {
