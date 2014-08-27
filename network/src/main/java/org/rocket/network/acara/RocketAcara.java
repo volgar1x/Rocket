@@ -25,7 +25,7 @@ public final class RocketAcara {
         return builder -> builder
                 // @Connect @Disconnect
                 .addEventMetadataLookup(RocketBasicEventMetadata::lookup)
-                .addDispatcherLookup(wrapInPropValidatorIfNeeded(RocketBasicDispatcher::lookup))
+                .addDispatcherLookup(RocketBasicDispatcher::lookup)
                 .addMetadataLookup(new BasicLookup())
 
                 // @Receive
