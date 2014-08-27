@@ -30,9 +30,16 @@ final class RocketBasicEventMetadata implements EventMetadata {
                ((ConnectEvent) event).isDisconnecting() == disconnecting;
     }
 
+    private static final EventMetadata
+            CONNECTING = new RocketBasicEventMetadata(false),
+            DISCONNECTING = new RocketBasicEventMetadata(true)
+            ;
+
     public static Optional<EventMetadata> lookup(Object event) {
         if (event instanceof ConnectEvent) {
-            return Optional.of(new RocketBasicEventMetadata(((ConnectEvent) event).isDisconnecting()));
+            return Optional.of(((ConnectEvent) event).isDisconnecting()
+                ? DISCONNECTING
+                : CONNECTING);
         }
         return Optional.empty();
     }
