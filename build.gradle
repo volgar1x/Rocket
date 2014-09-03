@@ -10,7 +10,7 @@ buildscript {
 
 allprojects {
 	group = 'org.rocket'
-    version = '1.1-SNAPSHOT'
+    version = '1.1-RC3'
 }
 
 subprojects {
