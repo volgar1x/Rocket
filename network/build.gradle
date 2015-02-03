@@ -1,5 +1,5 @@
 dependencies {
     compile project(':api')
-    compile "com.github.blackrush.acara:acara-api:${acaraVersion}"
+    compile "com.github.blackrush.acara:acara-core-java:${acaraVersion}"
     compile "com.google.inject.extensions:guice-multibindings:${guiceVersion}"
 }

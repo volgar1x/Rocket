@@ -16,7 +16,7 @@ subprojects {
         guavaVersion = '18.0'
         guiceVersion = '3.0'
         configVersion = '1.2.+'
-        acaraVersion = '1.4-alpha5'
+        acaraVersion = '2.0-alpha1'
         nettyVersion = '4.0.+'
     }
 
