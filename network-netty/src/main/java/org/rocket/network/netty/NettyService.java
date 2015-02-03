@@ -8,7 +8,7 @@ import io.netty.channel.*;
 import org.fungsi.Unit;
 import org.fungsi.concurrent.Future;
 import org.fungsi.concurrent.Futures;
-import org.rocket.Service;
+import org.rocket.ServicePath;
 import org.rocket.StartReason;
 import org.rocket.network.ControllerFactory;
 import org.rocket.network.NetworkClient;
@@ -49,7 +49,12 @@ final class NettyService extends ChannelInboundHandlerAdapter implements Network
     }
 
     @Override
-    public Class<? extends Service> dependsOn() {
+    public ServicePath path() {
+        return ServicePath.sample(this);
+    }
+
+    @Override
+    public ServicePath dependsOn() {
         return null;
     }
 

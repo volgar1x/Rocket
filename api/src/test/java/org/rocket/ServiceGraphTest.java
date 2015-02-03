@@ -12,6 +12,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.spy;
+import static org.rocket.ServicePath.absolute;
 
 public class ServiceGraphTest {
     protected Services.Graph newGraph(Service... services) {
@@ -21,12 +22,19 @@ public class ServiceGraphTest {
     }
 
     class MockService implements Service {
-        final Class<?> dependency;
-        MockService(Class<?> dependency) { this.dependency = dependency; }
+        final ServicePath path, dependency;
+        MockService(ServicePath path, ServicePath dependency) {
+            this.path = path;
+            this.dependency = dependency;
+        }
 
-        @SuppressWarnings("unchecked")
         @Override
-        public Class<? extends Service> dependsOn() { return (Class) dependency; }
+        public ServicePath path() {
+            return path;
+        }
+
+        @Override
+        public ServicePath dependsOn() { return dependency; }
 
         @Override public void start(StartReason reason) { }
 
@@ -34,11 +42,11 @@ public class ServiceGraphTest {
     }
 
     class A extends MockService {
-        A() { super(null); }
+        A() { super(absolute("A"), null); }
     }
 
     class B extends MockService {
-        B() { super(A.class); }
+        B() { super(absolute("B"), absolute("A")); }
     }
 
     @Test

@@ -33,7 +33,7 @@ public final class Services {
         for (ListIterator<Service> it = services.listIterator(); it.hasNext(); ) {
             Service service = it.next();
 
-            if (sameClass(service.dependsOn(), parent.itemClass())) {
+            if (parent.accepts(service)) {
                 it.remove();
 
                 Graph graph = graph(parent, service);
@@ -42,36 +42,6 @@ public final class Services {
                 parent.children.add(graph);
             }
         }
-    }
-
-    static boolean sameClass(Class<?> left, Class<?> right) {
-        if (left == right) {
-            return true;
-        }
-
-        Class<?> l = unwrapMockito(left),
-                 r = unwrapMockito(right);
-
-        if (l == left && r == right) {
-            return false;
-        }
-
-        return sameClass(l, r);
-    }
-
-    static Class<?> unwrapMockito(Class<?> klass) {
-        if (klass == null) {
-            return null;
-        }
-        String[] names = klass.getName().split("\\$\\$", 2);
-        if (names.length == 2) {
-            try {
-                return Class.forName(names[0]);
-            } catch (ClassNotFoundException e) {
-                throw new RuntimeException(e);
-            }
-        }
-        return klass;
     }
 
     final static class Graph implements ServiceGraph {
@@ -85,8 +55,11 @@ public final class Services {
             this.children = children;
         }
 
-        @Nullable Class<?> itemClass() {
-            return item != null ? item.getClass() : null;
+        boolean accepts(Service child) {
+            if (item == null) {
+                return child.dependsOn() == null;
+            }
+            return item.path().match(child.dependsOn());
         }
 
         @Override

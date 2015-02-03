@@ -37,4 +37,28 @@ public interface ServiceGraph {
      * @param newDep the new dependency
      */
     void rewire(Class<?> klass, @Nullable Class<?> newDep);
+
+    default Service fold() {
+        return new Service() {
+            @Override
+            public ServicePath path() {
+                return ServicePath.root();
+            }
+
+            @Override
+            public ServicePath dependsOn() {
+                return null;
+            }
+
+            @Override
+            public void start(StartReason reason) {
+                sink((parent, service) -> service.start(reason));
+            }
+
+            @Override
+            public void stop() {
+                emerge((parent, service) -> service.stop());
+            }
+        };
+    }
 }
