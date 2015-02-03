@@ -9,6 +9,7 @@ import org.fungsi.Unit;
 import org.fungsi.concurrent.Future;
 import org.fungsi.concurrent.Futures;
 import org.rocket.Service;
+import org.rocket.StartReason;
 import org.rocket.network.ControllerFactory;
 import org.rocket.network.NetworkClient;
 import org.rocket.network.NetworkService;
@@ -54,7 +55,7 @@ final class NettyService extends ChannelInboundHandlerAdapter implements Network
     }
 
     @Override
-    public void start() {
+    public void start(StartReason reason) {
         if (chan != null) {
             throw new IllegalStateException();
         }

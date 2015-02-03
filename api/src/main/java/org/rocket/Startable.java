@@ -1,5 +1,5 @@
 package org.rocket;
 
 public interface Startable {
-	void start();
+	void start(StartReason reason);
 }

@@ -29,8 +29,8 @@ public final class Services {
 				}
 
 				@Override
-				public void start() {
-					forEach((parent, service) -> service.start());
+				public void start(StartReason reason) {
+					forEach((parent, service) -> service.start(StartReason.NORMAL));
 				}
 
 				@Override

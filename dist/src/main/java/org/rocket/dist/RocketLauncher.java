@@ -4,6 +4,7 @@ import com.google.inject.*;
 import com.google.inject.spi.Message;
 import org.rocket.Service;
 import org.rocket.Services;
+import org.rocket.StartReason;
 
 import java.util.Collection;
 import java.util.stream.Collectors;
@@ -49,7 +50,7 @@ public final class RocketLauncher {
         Service folded = services.fold();
 
         // go live!
-        folded.start();
+        folded.start(StartReason.NORMAL);
         Runtime.getRuntime().addShutdownHook(new Thread(folded::stop));
     }
 

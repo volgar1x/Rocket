@@ -39,7 +39,7 @@ public class ServicesTest {
 			assertThat(parent, isEmpty());
 			assertThat(service, notNullValue());
 
-			service.start();
+			service.start(StartReason.NORMAL);
 		});
 
 		graph.forEachBackwards((parent, service) -> {
@@ -47,8 +47,8 @@ public class ServicesTest {
 		});
 
 
-		verify(serviceA).start();
-		verify(serviceB).start();
+		verify(serviceA).start(StartReason.NORMAL);
+		verify(serviceB).start(StartReason.NORMAL);
 		verify(serviceA).stop();
 		verify(serviceB).stop();
 	}
@@ -67,7 +67,7 @@ public class ServicesTest {
 		graph.forEach((parent, service) -> {
 			assertThat(service, notNullValue());
 
-			service.start();
+			service.start(StartReason.NORMAL);
 		});
 
 		graph.forEachBackwards((parent, service) -> {
@@ -77,8 +77,8 @@ public class ServicesTest {
 
 		InOrder inOrder = inOrder(serviceA, serviceB);
 
-		inOrder.verify(serviceA).start();
-		inOrder.verify(serviceB).start();
+		inOrder.verify(serviceA).start(StartReason.NORMAL);
+		inOrder.verify(serviceB).start(StartReason.NORMAL);
 		inOrder.verify(serviceB).stop();
 		inOrder.verify(serviceA).stop();
 	}
@@ -97,7 +97,7 @@ public class ServicesTest {
 		graph.forEach((parent, service) -> {
 			assertThat(service, notNullValue());
 
-			service.start();
+			service.start(StartReason.NORMAL);
 		});
 
 		graph.forEachBackwards((parent, service) -> {
@@ -105,8 +105,8 @@ public class ServicesTest {
 		});
 
 
-		verify(serviceA, never()).start();
-		verify(serviceB, never()).start();
+		verify(serviceA, never()).start(StartReason.NORMAL);
+		verify(serviceB, never()).start(StartReason.NORMAL);
 		verify(serviceA, never()).stop();
 		verify(serviceB, never()).stop();
 	}
@@ -124,7 +124,7 @@ public class ServicesTest {
 
 		Service folded = graph.fold();
 
-		folded.start();
+		folded.start(StartReason.NORMAL);
 		folded.stop();
 
 
@@ -133,8 +133,8 @@ public class ServicesTest {
 
 		InOrder inOrder = inOrder(serviceA, serviceB);
 
-		inOrder.verify(serviceA).start();
-		inOrder.verify(serviceB).start();
+		inOrder.verify(serviceA).start(StartReason.NORMAL);
+		inOrder.verify(serviceB).start(StartReason.NORMAL);
 		inOrder.verify(serviceB).stop();
 		inOrder.verify(serviceA).stop();
 	}
