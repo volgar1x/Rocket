@@ -84,13 +84,13 @@ public final class Services {
         }
 
         @Override
-        public @Nullable Graph get(Class<?> klass) {
-            if (klass.isInstance(item)) {
+        public @Nullable Graph get(ServicePath path) {
+            if (item != null && path.match(item.path())) {
                 return this;
             }
 
             for (Graph child : children) {
-                @Nullable Graph found = child.get(klass);
+                @Nullable Graph found = child.get(path);
                 if (found != null) {
                     return found;
                 }
@@ -100,8 +100,8 @@ public final class Services {
         }
 
         @Override
-        public void rewire(Class<?> klass, @Nullable Class<?> newDep) {
-            Graph subgraph = get(klass);
+        public void rewire(ServicePath path, @Nullable ServicePath newDep) {
+            Graph subgraph = get(path);
             if (subgraph == null) {
                 // try to rewire a service not contained in the graph
                 // ignore it till we have some reason to fail

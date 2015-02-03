@@ -26,17 +26,17 @@ public interface ServiceGraph {
     /**
      * Find a service by its {@link java.lang.Class} in the graph.
      * Trigger a full traversal of the graph.
-     * @param klass a non-null class
+     * @param path a non-null class
      * @return the sub-graph containing the service
      */
-    @Nullable ServiceGraph get(Class<?> klass);
+    @Nullable ServiceGraph get(ServicePath path);
 
     /**
      * Modify a service's dependency.
-     * @param klass the service to rewire
+     * @param path the service to rewire
      * @param newDep the new dependency
      */
-    void rewire(Class<?> klass, @Nullable Class<?> newDep);
+    void rewire(ServicePath path, @Nullable ServicePath newDep);
 
     default Service fold() {
         return new Service() {
