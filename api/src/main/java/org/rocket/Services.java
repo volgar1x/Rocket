@@ -1,113 +1,151 @@
 package org.rocket;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
-import java.util.stream.Collectors;
-
-import static java.util.Objects.requireNonNull;
-import static java.util.Optional.empty;
-import static java.util.Optional.of;
+import java.util.*;
+import java.util.function.BiConsumer;
 
 public final class Services {
 	private Services() {}
 
-	public static interface GraphConsumer {
-		void accept(Optional<Service> parent, Service service);
-	}
+    public static ServiceGraph newGraph(Collection<Service> services) {
+        return newGraphInternal(services);
+    }
 
-	public static interface Graph {
-		void forEach(GraphConsumer fn);
-		void forEachBackwards(GraphConsumer fn);
+    static Graph newGraphInternal(Collection<Service> services) {
+        // for test only
+        List<Service> newServices = new LinkedList<>(services);
+        Graph graph = root();
+        populateGraph(graph, newServices);
+        if (!newServices.isEmpty()) {
+            throw new IllegalArgumentException();
+        }
+        return graph;
+    }
 
-		default Service fold() {
-			return new Service() {
-				@Override
-				public Class<? extends Service> dependsOn() {
-					return null;
-				}
+    static Graph root() {
+        return new Graph(null, null, new HashSet<>());
+    }
 
-				@Override
-				public void start(StartReason reason) {
-					forEach((parent, service) -> service.start(StartReason.NORMAL));
-				}
+    static Graph graph(Graph parent, Service item) {
+        return new Graph(parent, item, new HashSet<>());
+    }
 
-				@Override
-				public void stop() {
-					forEachBackwards((parent, service) -> service.stop());
-				}
-			};
-		}
-	}
+    static void populateGraph(Graph parent, List<Service> services) {
+        for (ListIterator<Service> it = services.listIterator(); it.hasNext(); ) {
+            Service service = it.next();
 
-	static class Root implements Graph {
-		final List<Node> children = new ArrayList<>();
+            if (sameClass(service.dependsOn(), parent.itemClass())) {
+                it.remove();
 
-		@Override
-		public void forEach(GraphConsumer fn) {
-			for (Node child : children) {
-				fn.accept(empty(), child.parent);
-				child.forEach(fn);
-			}
-		}
+                Graph graph = graph(parent, service);
+                populateGraph(graph, services);
 
-		@Override
-		public void forEachBackwards(GraphConsumer fn) {
-			for (Node child : children) {
-				child.forEachBackwards(fn);
-				fn.accept(empty(), child.parent);
-			}
-		}
-	}
+                parent.children.add(graph);
+            }
+        }
+    }
 
-	static class Node implements Graph {
-		final Service parent;
-		final List<Node> children = new ArrayList<>();
+    static boolean sameClass(Class<?> left, Class<?> right) {
+        if (left == right) {
+            return true;
+        }
 
-		Node(Service parent) {
-			this.parent = requireNonNull(parent, "parent");
-		}
+        Class<?> l = unwrapMockito(left),
+                 r = unwrapMockito(right);
 
-		@Override
-		public void forEach(GraphConsumer fn) {
-			Optional<Service> parentOpt = of(parent);
+        if (l == left && r == right) {
+            return false;
+        }
 
-			for (Node child : children) {
-				fn.accept(parentOpt, child.parent);
-				child.forEach(fn);
-			}
-		}
+        return sameClass(l, r);
+    }
 
-		@Override
-		public void forEachBackwards(GraphConsumer fn) {
-			Optional<Service> parentOpt = of(parent);
+    static Class<?> unwrapMockito(Class<?> klass) {
+        if (klass == null) {
+            return null;
+        }
+        String[] names = klass.getName().split("\\$\\$", 2);
+        if (names.length == 2) {
+            try {
+                return Class.forName(names[0]);
+            } catch (ClassNotFoundException e) {
+                throw new RuntimeException(e);
+            }
+        }
+        return klass;
+    }
 
-			for (Node child : children) {
-				child.forEachBackwards(fn);
-				fn.accept(parentOpt, child.parent);
-			}
-		}
-	}
+    final static class Graph implements ServiceGraph {
+        final @Nullable Service item;
+        @Nullable Graph parent;
+        final Set<Graph> children;
 
-	public static Graph createGraph(Set<Service> s) {
-		Root root = new Root();
+        Graph(@Nullable Graph parent, @Nullable Service item, Set<Graph> children) {
+            this.parent = parent;
+            this.item = item;
+            this.children = children;
+        }
 
-		List<Node> nodes = s.stream().map(Node::new).collect(Collectors.toList());
+        @Nullable Class<?> itemClass() {
+            return item != null ? item.getClass() : null;
+        }
 
-		for (Node node : nodes) {
-			Class<? extends Service> klass = node.parent.dependsOn();
+        @Override
+        public void sink(BiConsumer<@Nullable Service, Service> fn) {
+            if (parent != null && item != null) {
+                fn.accept(parent.item, item);
+            }
+            children.forEach(child -> child.sink(fn));
+        }
 
-			if (klass == null) {
-				root.children.add(node);
-			} else {
-				Node parent = nodes.stream().filter(x -> klass.isInstance(x.parent)).findAny()
-						.orElseThrow(() -> new IllegalStateException("unresolved service " + klass));
+        @Override
+        public void emerge(BiConsumer<@Nullable Service, Service> fn) {
+            children.forEach(child -> child.emerge(fn));
+            if (parent != null && item != null) {
+                fn.accept(parent.item, item);
+            }
+        }
 
-				parent.children.add(node);
-			}
-		}
+        @Override
+        public Graph root() {
+            return parent != null ? parent.root() : this;
+        }
 
-		return root;
-	}
+        @Override
+        public @Nullable Graph get(Class<?> klass) {
+            if (klass.isInstance(item)) {
+                return this;
+            }
+
+            for (Graph child : children) {
+                @Nullable Graph found = child.get(klass);
+                if (found != null) {
+                    return found;
+                }
+            }
+
+            return null;
+        }
+
+        @Override
+        public void rewire(Class<?> klass, @Nullable Class<?> newDep) {
+            Graph subgraph = get(klass);
+            if (subgraph == null) {
+                // try to rewire a service not contained in the graph
+                // ignore it till we have some reason to fail
+                return;
+            }
+            assert subgraph.parent != null && subgraph.item != null;
+
+            Graph newParent = newDep != null ? get(newDep) : root();
+            if (newParent == null) {
+                // fail if wanted to rewire to a non-existent service
+                throw new NoSuchElementException();
+            }
+
+            subgraph.parent.children.remove(subgraph);
+            subgraph.parent = newParent;
+            newParent.children.add(subgraph);
+        }
+    }
+
 }
