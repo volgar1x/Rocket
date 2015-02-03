@@ -1,7 +1,7 @@
 package org.rocket.network.netty;
 
 import com.github.blackrush.acara.EventBus;
-import com.github.blackrush.acara.supervisor.event.SupervisedEvent;
+import com.github.blackrush.acara.Subscription;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.*;
 import org.fungsi.Unit;
@@ -14,11 +14,11 @@ import org.rocket.network.NetworkClientService;
 import org.rocket.network.NetworkTransaction;
 import org.rocket.network.event.ConnectEvent;
 import org.rocket.network.event.ReceiveEvent;
+import org.rocket.network.event.SuperviseEvent;
 import org.slf4j.Logger;
 
 import javax.inject.Provider;
 import java.util.Optional;
-import java.util.Set;
 import java.util.function.Consumer;
 
 final class NettyClientService extends ChannelInboundHandlerAdapter implements NetworkClientService {
@@ -31,7 +31,7 @@ final class NettyClientService extends ChannelInboundHandlerAdapter implements N
 
     Channel chan;
     EventLoopGroup worker;
-    Set<Object> controllers;
+    Subscription subscription;
 
     NettyClientService(EventBus eventBus, ControllerFactory controllerFactory, Provider<EventLoopGroup> eventLoopGroupProvider, Consumer<Bootstrap> configuration, Consumer<ChannelPipeline> pipelineConfiguration, Logger logger) {
         this.eventBus = eventBus;
@@ -56,8 +56,7 @@ final class NettyClientService extends ChannelInboundHandlerAdapter implements N
         logger.debug("starting");
 
         worker = eventLoopGroupProvider.get();
-        controllers = controllerFactory.create(this);
-        eventBus.subscribeMany(controllers);
+        subscription = eventBus.subscribeMany(controllerFactory.create(this));
 
         Bootstrap bootstrap = new Bootstrap();
         bootstrap.group(worker);
@@ -84,11 +83,11 @@ final class NettyClientService extends ChannelInboundHandlerAdapter implements N
 
         chan.close().awaitUninterruptibly();
         worker.shutdownGracefully().awaitUninterruptibly();
-        eventBus.unsubscribeMany(controllers);
+        subscription.revoke();
 
         chan = null;
         worker = null;
-        controllers = null;
+        subscription = null;
     }
 
     @Override
@@ -116,21 +115,21 @@ final class NettyClientService extends ChannelInboundHandlerAdapter implements N
 
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
-        eventBus.publishAsync(new ConnectEvent(this, false));
+        eventBus.publish(new ConnectEvent(this, false));
     }
 
     @Override
     public void channelInactive(ChannelHandlerContext ctx) throws Exception {
-        eventBus.publishAsync(new ConnectEvent(this, true));
+        eventBus.publish(new ConnectEvent(this, true));
     }
 
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
-        eventBus.publishAsync(new ReceiveEvent(this, msg));
+        eventBus.publish(new ReceiveEvent(this, msg));
     }
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
-        eventBus.publishAsync(new SupervisedEvent(RocketNetty.SUPERVISED_EVENT_NO_INITIAL, cause));
+        eventBus.publish(new SuperviseEvent(this, cause));
     }
 }

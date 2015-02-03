@@ -1,7 +1,7 @@
 package org.rocket.network.netty;
 
-import com.github.blackrush.acara.EventBusBuilder;
-import com.github.blackrush.acara.supervisor.event.SupervisedEvent;
+import com.github.blackrush.acara.EventBus;
+import com.github.blackrush.acara.Subscription;
 import com.google.common.collect.Sets;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.*;
@@ -15,6 +15,7 @@ import org.rocket.network.NetworkClient;
 import org.rocket.network.NetworkService;
 import org.rocket.network.event.ConnectEvent;
 import org.rocket.network.event.ReceiveEvent;
+import org.rocket.network.event.SuperviseEvent;
 import org.slf4j.Logger;
 
 import javax.inject.Provider;
@@ -26,7 +27,7 @@ import java.util.function.Consumer;
 @ChannelHandler.Sharable // srsly netty????
 final class NettyService extends ChannelInboundHandlerAdapter implements NetworkService {
 
-    private final EventBusBuilder eventBusBuilder;
+    private final Provider<EventBus> eventBusBuilder;
     private final ControllerFactory controllerFactory;
     private final Provider<EventLoopGroup> eventLoopGroupProvider;
     private final Consumer<ServerBootstrap> configuration;
@@ -39,7 +40,7 @@ final class NettyService extends ChannelInboundHandlerAdapter implements Network
     private AtomicLong nextId;
     private volatile int maxConnectedClients;
 
-    NettyService(EventBusBuilder eventBusBuilder, ControllerFactory controllerFactory, Provider<EventLoopGroup> eventLoopGroupProvider, Consumer<ServerBootstrap> configuration, Consumer<ChannelPipeline> pipelineConfiguration, Logger logger) {
+    NettyService(Provider<EventBus> eventBusBuilder, ControllerFactory controllerFactory, Provider<EventLoopGroup> eventLoopGroupProvider, Consumer<ServerBootstrap> configuration, Consumer<ChannelPipeline> pipelineConfiguration, Logger logger) {
         this.eventBusBuilder = eventBusBuilder;
         this.controllerFactory = controllerFactory;
         this.eventLoopGroupProvider = eventLoopGroupProvider;
@@ -124,42 +125,43 @@ final class NettyService extends ChannelInboundHandlerAdapter implements Network
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
         Channel channel = ctx.channel();
 
-        NettyClient client = new NettyClient(channel, nextId.getAndIncrement(), eventBusBuilder.build());
+        NettyClient client = new NettyClient(channel, nextId.getAndIncrement(), eventBusBuilder.get());
         channel.attr(RocketNetty.CLIENT_KEY).set(client);
 
         Set<Object> controllers = controllerFactory.create(client);
-        channel.attr(RocketNetty.CONTROLLERS_KEY).set(controllers);
+        Subscription subscription = client.getEventBus().subscribeMany(controllers);
+        channel.attr(RocketNetty.SUBSCRIPTION_KEY).set(subscription);
 
         clients.add(client);
-        client.getEventBus().subscribeMany(controllers);
 
         if (maxConnectedClients < clients.size()) {
             maxConnectedClients = clients.size();
         }
 
-        client.getEventBus().publishAsync(new ConnectEvent(client, false));
+        client.getEventBus().publish(new ConnectEvent(client, false));
     }
 
     @SuppressWarnings("SuspiciousMethodCalls")
     @Override
     public void channelInactive(ChannelHandlerContext ctx) throws Exception {
         NetworkClient client = ctx.channel().attr(RocketNetty.CLIENT_KEY).getAndRemove();
-        ctx.channel().attr(RocketNetty.CONTROLLERS_KEY).getAndRemove();
+        Subscription subscription = ctx.channel().attr(RocketNetty.SUBSCRIPTION_KEY).getAndRemove();
+        subscription.revoke();
         clients.remove(client);
 
-        client.getEventBus().publishAsync(new ConnectEvent(client, true));
+        client.getEventBus().publish(new ConnectEvent(client, true));
     }
 
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
         NetworkClient client = ctx.channel().attr(RocketNetty.CLIENT_KEY).get();
-        client.getEventBus().publishAsync(new ReceiveEvent(client, msg));
+        client.getEventBus().publish(new ReceiveEvent(client, msg));
     }
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
         logger.error("exception caught", cause);
-        ctx.channel().attr(RocketNetty.CLIENT_KEY).get()
-                .getEventBus().publishAsync(new SupervisedEvent(RocketNetty.SUPERVISED_EVENT_NO_INITIAL, cause));
+        NetworkClient client = ctx.channel().attr(RocketNetty.CLIENT_KEY).get();
+        client.getEventBus().publish(new SuperviseEvent(client, cause));
     }
 }

@@ -1,7 +1,7 @@
 package org.rocket.network.netty;
 
 import com.github.blackrush.acara.EventBus;
-import com.github.blackrush.acara.EventBusBuilder;
+import com.github.blackrush.acara.Subscription;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelPipeline;
@@ -18,7 +18,6 @@ import org.rocket.network.NetworkService;
 import org.slf4j.Logger;
 
 import javax.inject.Provider;
-import java.util.Set;
 import java.util.function.Consumer;
 
 public final class RocketNetty {
@@ -27,13 +26,13 @@ public final class RocketNetty {
     public static final Object SUPERVISED_EVENT_NO_INITIAL = new Object();
 
     public static final AttributeKey<NetworkClient> CLIENT_KEY = AttributeKey.valueOf(RocketNetty.class.getName() + ".CLIENT_KEY");
-    public static final AttributeKey<Set<Object>> CONTROLLERS_KEY = AttributeKey.valueOf(RocketNetty.class.getName() + ".CONTROLLERS_KEY");
+    public static final AttributeKey<Subscription> SUBSCRIPTION_KEY = AttributeKey.valueOf(RocketNetty.class.getName() + ".SUBSCRIPTION_KEY");
 
-    public static NetworkService newService(EventBusBuilder eventBus, ControllerFactory controllerFactory, Consumer<ServerBootstrap> configuration, Consumer<ChannelPipeline> pipelineConfiguration, Logger logger) {
+    public static NetworkService newService(Provider<EventBus> eventBus, ControllerFactory controllerFactory, Consumer<ServerBootstrap> configuration, Consumer<ChannelPipeline> pipelineConfiguration, Logger logger) {
         return new NettyService(eventBus, controllerFactory, NioEventLoopGroup::new, configuration, pipelineConfiguration, logger);
     }
 
-    public static NetworkService newService(EventBusBuilder eventBus, ControllerFactory controllerFactory, Provider<EventLoopGroup> eventLoopGroupProvider, Consumer<ServerBootstrap> configuration, Consumer<ChannelPipeline> pipelineConfiguration, Logger logger) {
+    public static NetworkService newService(Provider<EventBus> eventBus, ControllerFactory controllerFactory, Provider<EventLoopGroup> eventLoopGroupProvider, Consumer<ServerBootstrap> configuration, Consumer<ChannelPipeline> pipelineConfiguration, Logger logger) {
         return new NettyService(eventBus, controllerFactory, eventLoopGroupProvider, configuration, pipelineConfiguration, logger);
     }
 
