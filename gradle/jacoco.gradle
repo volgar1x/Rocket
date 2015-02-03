@@ -1,0 +1,7 @@
+subprojects {
+    apply plugin: 'jacoco'
+
+    jacoco {
+        toolVersion = '0.7.+'
+    }
+}

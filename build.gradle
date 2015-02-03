@@ -26,6 +26,8 @@ subprojects {
     }
 }
 
+apply from: rootProject.file('gradle/jacoco.gradle')
+
 task wrapper(type: Wrapper) {
     gradleVersion = '2.1'
 }
