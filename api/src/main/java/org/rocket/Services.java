@@ -6,6 +6,21 @@ import java.util.function.BiConsumer;
 public final class Services {
 	private Services() {}
 
+    /**
+     * A virtual service does nothing. It just has a path and can depend on another service.
+     * @param path a path describing the service
+     * @param dependsOn a optional path on which the service should depend
+     * @return a service doing nothing
+     */
+    public static Service virtual(ServicePath path, @Nullable ServicePath dependsOn) {
+        return new Service() {
+            @Override public ServicePath path()      { return path; }
+            @Override public ServicePath dependsOn() { return dependsOn; }
+            @Override public void start(StartReason reason) { }
+            @Override public void stop() { }
+        };
+    }
+
     public static ServiceGraph newGraph(Collection<Service> services) {
         return newGraphInternal(services);
     }
