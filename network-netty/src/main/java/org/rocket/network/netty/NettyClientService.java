@@ -18,7 +18,6 @@ import org.rocket.network.event.SuperviseEvent;
 import org.slf4j.Logger;
 
 import javax.inject.Provider;
-import java.util.Optional;
 import java.util.function.Consumer;
 
 final class NettyClientService extends ChannelInboundHandlerAdapter implements NetworkClientService {
@@ -43,8 +42,8 @@ final class NettyClientService extends ChannelInboundHandlerAdapter implements N
     }
 
     @Override
-    public Optional<Class<? extends Service>> dependsOn() {
-        return Optional.empty();
+    public Class<? extends Service> dependsOn() {
+        return null;
     }
 
     @Override

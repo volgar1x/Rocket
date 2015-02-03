@@ -7,9 +7,8 @@ import org.junit.runners.JUnit4;
 import org.mockito.InOrder;
 import org.rocket.Services.Graph;
 
-import java.util.Optional;
-
 import static org.hamcrest.CoreMatchers.notNullValue;
+import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Mockito.*;
 import static org.rocket.JUnitMatchers.isEmpty;
@@ -29,8 +28,8 @@ public class ServicesTest {
         Service serviceA = mock(Service.class),
 				serviceB = mock(Service.class);
 
-		when(serviceA.dependsOn()).thenReturn(Optional.empty());
-		when(serviceB.dependsOn()).thenReturn(Optional.empty());
+		when(serviceA.dependsOn()).thenReturn(null);
+		when(serviceB.dependsOn()).thenReturn(null);
 
 
 		Graph graph = createGraph(ImmutableSet.of(serviceA, serviceB));
@@ -42,9 +41,7 @@ public class ServicesTest {
 			service.start(StartReason.NORMAL);
 		});
 
-		graph.forEachBackwards((parent, service) -> {
-			service.stop();
-		});
+		graph.forEachBackwards((parent, service) -> service.stop());
 
 
 		verify(serviceA).start(StartReason.NORMAL);
@@ -53,13 +50,14 @@ public class ServicesTest {
 		verify(serviceB).stop();
 	}
 
-	@Test
+	@SuppressWarnings("unchecked")
+    @Test
 	public void createGraphWithOneParent() {
         Service serviceA = mock(Service.class),
 				serviceB = mock(Service.class);
 
-		when(serviceA.dependsOn()).thenReturn(Optional.empty());
-		when(serviceB.dependsOn()).thenReturn(Optional.of(serviceA.getClass()));
+		when(serviceA.dependsOn()).thenReturn(null);
+		when(serviceB.dependsOn()).thenReturn((Class) serviceA.getClass());
 
 
 		Graph graph = createGraph(ImmutableSet.of(serviceA, serviceB));
@@ -70,9 +68,7 @@ public class ServicesTest {
 			service.start(StartReason.NORMAL);
 		});
 
-		graph.forEachBackwards((parent, service) -> {
-			service.stop();
-		});
+		graph.forEachBackwards((parent, service) -> service.stop());
 
 
 		InOrder inOrder = inOrder(serviceA, serviceB);
@@ -83,13 +79,14 @@ public class ServicesTest {
 		inOrder.verify(serviceA).stop();
 	}
 
-	@Test
+	@SuppressWarnings("unchecked")
+    @Test
 	public void createGraphWithRing() {
         Service serviceA = mock(Service.class),
 				serviceB = mock(Service.class);
 
-		when(serviceA.dependsOn()).thenReturn(Optional.of(serviceB.getClass()));
-		when(serviceB.dependsOn()).thenReturn(Optional.of(serviceA.getClass()));
+		when(serviceA.dependsOn()).thenReturn((Class) serviceB.getClass());
+		when(serviceB.dependsOn()).thenReturn((Class) serviceA.getClass());
 
 
 		Graph graph = createGraph(ImmutableSet.of(serviceA, serviceB));
@@ -100,9 +97,7 @@ public class ServicesTest {
 			service.start(StartReason.NORMAL);
 		});
 
-		graph.forEachBackwards((parent, service) -> {
-			service.stop();
-		});
+		graph.forEachBackwards((parent, service) -> service.stop());
 
 
 		verify(serviceA, never()).start(StartReason.NORMAL);
@@ -111,13 +106,14 @@ public class ServicesTest {
 		verify(serviceB, never()).stop();
 	}
 
-	@Test
+	@SuppressWarnings("unchecked")
+    @Test
 	public void graphFolding() {
         Service serviceA = mock(Service.class),
 				serviceB = mock(Service.class);
 
-		when(serviceA.dependsOn()).thenReturn(Optional.empty());
-		when(serviceB.dependsOn()).thenReturn(Optional.of(serviceA.getClass()));
+		when(serviceA.dependsOn()).thenReturn(null);
+		when(serviceB.dependsOn()).thenReturn((Class) serviceA.getClass());
 
 
 		Graph graph = createGraph(ImmutableSet.of(serviceA, serviceB));
@@ -128,7 +124,7 @@ public class ServicesTest {
 		folded.stop();
 
 
-		assertThat(folded.dependsOn(), isEmpty());
+		assertThat(folded.dependsOn(), nullValue());
 
 
 		InOrder inOrder = inOrder(serviceA, serviceB);

@@ -24,8 +24,8 @@ public final class Services {
 		default Service fold() {
 			return new Service() {
 				@Override
-				public Optional<Class<? extends Service>> dependsOn() {
-					return empty();
+				public Class<? extends Service> dependsOn() {
+					return null;
 				}
 
 				@Override
@@ -96,13 +96,11 @@ public final class Services {
 		List<Node> nodes = s.stream().map(Node::new).collect(Collectors.toList());
 
 		for (Node node : nodes) {
-			Optional<Class<? extends Service>> klassOpt = node.parent.dependsOn();
+			Class<? extends Service> klass = node.parent.dependsOn();
 
-			if (!klassOpt.isPresent()) {
+			if (klass == null) {
 				root.children.add(node);
 			} else {
-				Class<? extends Service> klass = klassOpt.get();
-
 				Node parent = nodes.stream().filter(x -> klass.isInstance(x.parent)).findAny()
 						.orElseThrow(() -> new IllegalStateException("unresolved service " + klass));
 
