@@ -1,21 +1,19 @@
 package org.rocket.network.netty;
 
 import com.github.blackrush.acara.EventBus;
-import com.google.inject.Key;
 import io.netty.channel.Channel;
 import org.fungsi.Unit;
 import org.fungsi.concurrent.Future;
 import org.fungsi.concurrent.Futures;
-import org.rocket.network.*;
+import org.rocket.network.NetworkClient;
+import org.rocket.network.NetworkTransaction;
 
 import java.util.function.Consumer;
-import java.util.stream.Stream;
 
 final class NettyClient implements NetworkClient {
     final Channel channel;
     final long id;
     final EventBus eventBus;
-    final HashPropBag props = new HashPropBag();
 
     NettyClient(Channel channel, long id, EventBus eventBus) {
         this.channel = channel;
@@ -50,31 +48,6 @@ final class NettyClient implements NetworkClient {
     }
 
     @Override
-    public <T> Prop<T> getProp(Key<?> key) {
-        return props.getProp(key);
-    }
-
-    @Override
-    public <T> MutProp<T> getMutProp(Key<?> key) {
-        return props.getMutProp(key);
-    }
-
-    @Override
-    public Stream<Key<?>> getPresentPropKeys() {
-        return props.getPresentPropKeys();
-    }
-
-    @Override
-    public boolean isPropPresent(Key<?> key) {
-        return props.isPropPresent(key);
-    }
-
-    @Override
-    public int getNrPresentProps() {
-        return props.getNrPresentProps();
-    }
-
-    @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || o.getClass() != NettyClient.class) return false;
@@ -91,8 +64,7 @@ final class NettyClient implements NetworkClient {
     @Override
     public String toString() {
         return "NettyClient(" +
-                "id=" + id + "," +
-                "nr-props=" + props.getNrPresentProps() +
+                "id=" + id +
                 ')';
     }
 }
