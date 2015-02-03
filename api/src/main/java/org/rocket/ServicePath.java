@@ -1,5 +1,8 @@
 package org.rocket;
 
+/**
+ * A ServicePath describes the location of a {@link org.rocket.Service}.
+ */
 public final class ServicePath {
     private final String path;
 

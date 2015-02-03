@@ -2,6 +2,9 @@ package org.rocket;
 
 import java.util.function.BiConsumer;
 
+/**
+ * A ServiceGraph is used when dealing with {@link org.rocket.Service} dependencies.
+ */
 public interface ServiceGraph {
     /**
      * Top-down traversal of the graph.

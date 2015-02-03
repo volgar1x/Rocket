@@ -3,6 +3,11 @@ package org.rocket;
 import java.util.*;
 import java.util.function.BiConsumer;
 
+/**
+ * Various utilities to use and manipulate services. Typically a companion object for {@link org.rocket.Service}.
+ * @see org.rocket.ServiceGraph
+ * @see org.rocket.Service
+ */
 public final class Services {
 	private Services() {}
 
@@ -21,6 +26,11 @@ public final class Services {
         };
     }
 
+    /**
+     * Create a graph of services according to their dependencies.
+     * @param services a non-structured collection of services
+     * @return the built graph of services
+     */
     public static ServiceGraph newGraph(Collection<Service> services) {
         return newGraphInternal(services);
     }
