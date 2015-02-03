@@ -3,6 +3,7 @@ package org.rocket.dist;
 import com.google.inject.*;
 import com.google.inject.spi.Message;
 import org.rocket.Service;
+import org.rocket.ServiceGraph;
 import org.rocket.Services;
 import org.rocket.StartReason;
 
@@ -40,11 +41,11 @@ public final class RocketLauncher {
     public static void run(Rocket rocket) {
         requireNonNull(rocket, "rocket");
 
-        Services.Graph services = findBindings(rocket.getInjector(), Key.get(Service.class))
+        ServiceGraph services = findBindings(rocket.getInjector(), Key.get(Service.class))
                 .<Service>map(x -> x.getProvider().get())
                 .collect(Collectors.collectingAndThen(
-                        Collectors.toSet(),
-                        Services::createGraph));
+                        Collectors.toList(),
+                        Services::newGraph));
 
         // fold services
         Service folded = services.fold();
