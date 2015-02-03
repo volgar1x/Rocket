@@ -3,7 +3,6 @@ package org.rocket.dist;
 import com.google.inject.*;
 import com.google.inject.spi.Message;
 import org.rocket.Service;
-import org.rocket.ServiceContext;
 import org.rocket.Services;
 
 import java.util.Collection;
@@ -24,7 +23,7 @@ public final class RocketLauncher {
         requireNonNull(rocket, "rocket");
 
         try {
-            run(rocket.getServiceContext());
+            run(rocket);
         } catch (CreationException e) {
             printGuiceMessages(e.getErrorMessages());
         } catch (ProvisionException e) {
@@ -33,14 +32,14 @@ public final class RocketLauncher {
     }
 
     /**
-     * Run a {@link org.rocket.ServiceContext}
-     * @param ctx a non-null service context
+     * Run a {@link org.rocket.dist.Rocket}
+     * @param rocket a non-null rocket
      */
     @Deprecated
-    public static void run(ServiceContext ctx) {
-        requireNonNull(ctx, "ctx");
+    public static void run(Rocket rocket) {
+        requireNonNull(rocket, "rocket");
 
-        Services.Graph services = findBindings(ctx.getInjector(), Key.get(Service.class))
+        Services.Graph services = findBindings(rocket.getInjector(), Key.get(Service.class))
                 .<Service>map(x -> x.getProvider().get())
                 .collect(Collectors.collectingAndThen(
                         Collectors.toSet(),
@@ -50,8 +49,8 @@ public final class RocketLauncher {
         Service folded = services.fold();
 
         // go live!
-        folded.start(ctx);
-        Runtime.getRuntime().addShutdownHook(new Thread(() -> folded.stop(ctx)));
+        folded.start();
+        Runtime.getRuntime().addShutdownHook(new Thread(folded::stop));
     }
 
     private static void printGuiceMessages(Collection<Message> messages) {

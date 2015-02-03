@@ -4,17 +4,16 @@ import com.google.common.collect.ImmutableSet;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
+import org.mockito.InOrder;
+import org.rocket.Services.Graph;
+
+import java.util.Optional;
 
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Mockito.*;
 import static org.rocket.JUnitMatchers.isEmpty;
-import static org.rocket.Services.*;
-
-import org.mockito.InOrder;
-import org.rocket.Services.*;
-
-import java.util.Optional;
+import static org.rocket.Services.createGraph;
 
 @RunWith(JUnit4.class)
 public class ServicesTest {
@@ -27,9 +26,7 @@ public class ServicesTest {
 
 	@Test
 	public void createSimpleGraph() {
-		ServiceContext ctx = mock(ServiceContext.class);
-
-		Service serviceA = mock(Service.class),
+        Service serviceA = mock(Service.class),
 				serviceB = mock(Service.class);
 
 		when(serviceA.dependsOn()).thenReturn(Optional.empty());
@@ -42,25 +39,23 @@ public class ServicesTest {
 			assertThat(parent, isEmpty());
 			assertThat(service, notNullValue());
 
-			service.start(ctx);
+			service.start();
 		});
 
 		graph.forEachBackwards((parent, service) -> {
-			service.stop(ctx);
+			service.stop();
 		});
 
 
-		verify(serviceA).start(ctx);
-		verify(serviceB).start(ctx);
-		verify(serviceA).stop(ctx);
-		verify(serviceB).stop(ctx);
+		verify(serviceA).start();
+		verify(serviceB).start();
+		verify(serviceA).stop();
+		verify(serviceB).stop();
 	}
 
 	@Test
 	public void createGraphWithOneParent() {
-		ServiceContext ctx = mock(ServiceContext.class);
-
-		Service serviceA = mock(Service.class),
+        Service serviceA = mock(Service.class),
 				serviceB = mock(Service.class);
 
 		when(serviceA.dependsOn()).thenReturn(Optional.empty());
@@ -72,27 +67,25 @@ public class ServicesTest {
 		graph.forEach((parent, service) -> {
 			assertThat(service, notNullValue());
 
-			service.start(ctx);
+			service.start();
 		});
 
 		graph.forEachBackwards((parent, service) -> {
-			service.stop(ctx);
+			service.stop();
 		});
 
 
 		InOrder inOrder = inOrder(serviceA, serviceB);
 
-		inOrder.verify(serviceA).start(ctx);
-		inOrder.verify(serviceB).start(ctx);
-		inOrder.verify(serviceB).stop(ctx);
-		inOrder.verify(serviceA).stop(ctx);
+		inOrder.verify(serviceA).start();
+		inOrder.verify(serviceB).start();
+		inOrder.verify(serviceB).stop();
+		inOrder.verify(serviceA).stop();
 	}
 
 	@Test
 	public void createGraphWithRing() {
-		ServiceContext ctx = mock(ServiceContext.class);
-
-		Service serviceA = mock(Service.class),
+        Service serviceA = mock(Service.class),
 				serviceB = mock(Service.class);
 
 		when(serviceA.dependsOn()).thenReturn(Optional.of(serviceB.getClass()));
@@ -104,25 +97,23 @@ public class ServicesTest {
 		graph.forEach((parent, service) -> {
 			assertThat(service, notNullValue());
 
-			service.start(ctx);
+			service.start();
 		});
 
 		graph.forEachBackwards((parent, service) -> {
-			service.stop(ctx);
+			service.stop();
 		});
 
 
-		verify(serviceA, never()).start(ctx);
-		verify(serviceB, never()).start(ctx);
-		verify(serviceA, never()).stop(ctx);
-		verify(serviceB, never()).stop(ctx);
+		verify(serviceA, never()).start();
+		verify(serviceB, never()).start();
+		verify(serviceA, never()).stop();
+		verify(serviceB, never()).stop();
 	}
 
 	@Test
 	public void graphFolding() {
-		ServiceContext ctx = mock(ServiceContext.class);
-
-		Service serviceA = mock(Service.class),
+        Service serviceA = mock(Service.class),
 				serviceB = mock(Service.class);
 
 		when(serviceA.dependsOn()).thenReturn(Optional.empty());
@@ -133,8 +124,8 @@ public class ServicesTest {
 
 		Service folded = graph.fold();
 
-		folded.start(ctx);
-		folded.stop(ctx);
+		folded.start();
+		folded.stop();
 
 
 		assertThat(folded.dependsOn(), isEmpty());
@@ -142,10 +133,10 @@ public class ServicesTest {
 
 		InOrder inOrder = inOrder(serviceA, serviceB);
 
-		inOrder.verify(serviceA).start(ctx);
-		inOrder.verify(serviceB).start(ctx);
-		inOrder.verify(serviceB).stop(ctx);
-		inOrder.verify(serviceA).stop(ctx);
+		inOrder.verify(serviceA).start();
+		inOrder.verify(serviceB).start();
+		inOrder.verify(serviceB).stop();
+		inOrder.verify(serviceA).stop();
 	}
 
 }

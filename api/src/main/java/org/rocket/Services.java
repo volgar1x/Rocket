@@ -1,6 +1,9 @@
 package org.rocket;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import static java.util.Objects.requireNonNull;
@@ -26,13 +29,13 @@ public final class Services {
 				}
 
 				@Override
-				public void start(ServiceContext ctx) {
-					forEach((parent, service) -> service.start(ctx));
+				public void start() {
+					forEach((parent, service) -> service.start());
 				}
 
 				@Override
-				public void stop(ServiceContext ctx) {
-					forEachBackwards((parent, service) -> service.stop(ctx));
+				public void stop() {
+					forEachBackwards((parent, service) -> service.stop());
 				}
 			};
 		}

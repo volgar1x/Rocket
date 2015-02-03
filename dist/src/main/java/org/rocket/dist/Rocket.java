@@ -5,8 +5,6 @@ import com.google.inject.Injector;
 import com.google.inject.Module;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
-import org.rocket.ImmutableServiceContext;
-import org.rocket.ServiceContext;
 
 public abstract class Rocket {
     public ClassLoader getClassLoader() {
@@ -25,7 +23,4 @@ public abstract class Rocket {
         return Guice.createInjector(getModule());
     }
 
-    public final ServiceContext getServiceContext() {
-        return ImmutableServiceContext.of(getConfig(), getClassLoader(), getInjector());
-    }
 }
