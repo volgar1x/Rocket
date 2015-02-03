@@ -1,7 +1,5 @@
 package org.rocket;
 
-import java.util.concurrent.ThreadLocalRandom;
-
 public final class ServicePath {
     private final String path;
 
@@ -10,29 +8,28 @@ public final class ServicePath {
     }
 
     public static ServicePath root() {
-        return new ServicePath("/");
+        return new ServicePath("");
     }
 
     public static ServicePath absolute(String path) {
         return new ServicePath(path);
     }
 
-    public static ServicePath sample(String prefix) {
-        int id = ThreadLocalRandom.current().nextInt();
-        return absolute(prefix + "-" + id);
-    }
-
-    public static ServicePath sample(Object service) {
-        return sample(service.getClass().getName());
+    public static ServicePath of(Object service) {
+        return absolute(service.getClass().getName());
     }
 
     public boolean match(ServicePath other) {
         return this.path.equalsIgnoreCase(other.path);
     }
 
+    public ServicePath concat(ServicePath child) {
+        return new ServicePath(path + "/" + child.path);
+    }
+
     @Override
     public String toString() {
-        return path;
+        return "/" + path;
     }
 
     @Override

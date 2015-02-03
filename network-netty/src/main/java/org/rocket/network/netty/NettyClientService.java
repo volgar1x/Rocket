@@ -43,7 +43,7 @@ final class NettyClientService extends ChannelInboundHandlerAdapter implements N
 
     @Override
     public ServicePath path() {
-        return ServicePath.sample(this);
+        return ServicePath.of(this);
     }
 
     @Override
