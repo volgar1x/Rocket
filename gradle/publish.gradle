@@ -1,0 +1,37 @@
+apply plugin: 'maven'
+
+repositories {
+    mavenCentral()
+    jcenter()
+}
+
+task sourcesJar(type: Jar, dependsOn: classes) {
+    classifier = 'sources'
+    from sourceSets.main.allSource
+}
+
+task javadocJar(type: Jar, dependsOn: javadoc) {
+    classifier = 'javadoc'
+    from javadoc.destinationDir
+}
+
+artifacts {
+    archives sourcesJar, javadocJar
+}
+
+ext {
+    bintrayUser = project.hasProperty('bintrayUser') ? bintrayUser : ''
+    bintrayKey = project.hasProperty('bintrayKey') ? bintrayKey : ''
+}
+
+uploadArchives {
+    repositories.mavenDeployer {
+        repository(url: "https://api.bintray.com/maven/blackrush/maven/Rocket") {
+            authentication(userName: bintrayUser, password: bintrayKey)
+        }
+
+        if (project != rootProject) {
+            pom.artifactId = "rocket-${project.name}"
+        }
+    }
+}

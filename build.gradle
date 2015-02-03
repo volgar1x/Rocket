@@ -1,33 +1,10 @@
-buildscript {
-    repositories {
-        mavenCentral()
-        jcenter()
-    }
-
-    dependencies {
-    }
-}
-
 allprojects {
 	group = 'org.rocket'
-    version = '1.1-RC4'
+    version = '1.2-SNAPSHOT'
 }
 
 subprojects {
-    repositories {
-        mavenCentral()
-        jcenter()
-        maven {
-            url acaraUrl
-            credentials {
-                username acaraUsername
-                password acaraPassword
-            }
-        }
-    }
-
     apply plugin: 'java'
-    apply plugin: 'maven-publish'
 
     sourceCompatibility = 1.8
     targetCompatibility = 1.8
@@ -41,52 +18,10 @@ subprojects {
         testCompile 'junit:junit:4.11'
         testCompile 'org.mockito:mockito-core:1.9.5'
     }
-
-    task sourcesJar(type: Jar, dependsOn: classes) {
-        classifier = 'sources'
-        from sourceSets.main.allSource
-    }
-
-    task javadocJar(type: Jar, dependsOn: javadoc) {
-        classifier = 'javadoc'
-        from javadoc.destinationDir
-    }
-
-    artifacts {
-        archives sourcesJar, javadocJar
-    }
-
-    publishing {
-        publications {
-            mavenJava(MavenPublication) {
-                from components.java
-
-                artifact sourcesJar {
-                    classifier "sources"
-                }
-
-                artifact javadocJar {
-                    classifier "javadoc"
-                }
-
-                artifactId = "rocket-${project.name}"
-            }
-        }
-
-        repositories {
-            maven {
-                url rocketUrl
-                credentials {
-                    username rocketUsername
-                    password rocketPassword
-                }
-            }
-        }
-    }
 }
 
 task wrapper(type: Wrapper) {
-    gradleVersion = '1.10'
+    gradleVersion = '2.1'
 }
 
 task javadocAll(type: Javadoc) {
