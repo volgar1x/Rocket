@@ -1,0 +1,6 @@
+dependencies {
+    compile "org.slf4j:slf4j-api:${slf4jVersion}"
+    compile "com.google.guava:guava:${guavaVersion}"
+    compile "com.google.inject:guice:${guiceVersion}"
+    compile "com.typesafe:config:${configVersion}"
+}
