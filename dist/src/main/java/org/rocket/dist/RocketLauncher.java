@@ -41,7 +41,7 @@ public final class RocketLauncher {
     public static void run(Rocket rocket) {
         requireNonNull(rocket, "rocket");
 
-        ServiceGraph services = findBindings(rocket.getInjector(), Key.get(Service.class))
+        ServiceGraph services = findBindings(rocket.createInjector(), Key.get(Service.class))
                 .<Service>map(x -> x.getProvider().get())
                 .collect(Collectors.collectingAndThen(
                         Collectors.toList(),
