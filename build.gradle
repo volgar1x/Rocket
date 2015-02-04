@@ -32,8 +32,18 @@ task wrapper(type: Wrapper) {
     gradleVersion = '2.1'
 }
 
-task javadocAll(type: Javadoc) {
+task docs(type: Javadoc) {
     source subprojects.collect { it.sourceSets.main.allJava }
     classpath = files(subprojects.collect { it.sourceSets.main.compileClasspath })
     destinationDir = file("${buildDir}/docs/javadoc")
+    options {
+        links "http://docs.oracle.com/javase/8/docs/api/"
+        links "http://docs.guava-libraries.googlecode.com/git-history/v18.0/javadoc/"
+        links "http://docs.oracle.com/javaee/7/api/"
+        links "http://google.github.io/guice/api-docs/3.0/javadoc/"
+        links "http://typesafehub.github.io/config/latest/api/"
+        links "http://netty.io/4.0/api/"
+        links "http://blackrush.github.io/fungsi/1.2/"
+        links "http://blackrush.github.io/acara/2.0/"
+    }
 }
