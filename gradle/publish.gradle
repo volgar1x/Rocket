@@ -35,3 +35,11 @@ uploadArchives {
         }
     }
 }
+
+install {
+    repositories.mavenInstaller {
+        if (project != rootProject) {
+            pom.artifactId = "rocket-${project.name}"
+        }
+    }
+}
