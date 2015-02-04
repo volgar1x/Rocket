@@ -58,7 +58,7 @@ public class Stopwatch {
 
     /**
      * Start the stopwatch and return a handle used to stop the stopwatch.
-     * @return
+     * @return a handle
      * @see org.rocket.Stopwatch.Handle#stop()
      */
     public Handle start() {

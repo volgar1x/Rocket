@@ -49,11 +49,11 @@ public final class ServicePath {
      * Concat a path with another.
      * Example :
      * <code>
-     *     ServicePath pathA = ServicePath.of(A), //=> "/A"
-     *                 pathB = ServicePath.of(B); //=> "/B"
+     *     ServicePath pathA = ServicePath.of(A), //=&gt; "/A"
+     *                 pathB = ServicePath.of(B); //=&gt; "/B"
      *
      *     ServicePath newPath = pathA.concat(pathB);
-     *     println(newPath); //=> "/A/B"
+     *     println(newPath); //=&gt; "/A/B"
      * </code>
      * @param child the path to append
      * @return the concatenated path
