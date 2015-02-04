@@ -42,7 +42,7 @@ public final class ServicePath {
      * @return {@code true} if they are equal, {@code false} otherwise
      */
     public boolean match(ServicePath other) {
-        return this.path.equalsIgnoreCase(other.path);
+        return other != null && this.path.equalsIgnoreCase(other.path);
     }
 
     /**
