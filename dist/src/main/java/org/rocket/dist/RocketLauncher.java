@@ -36,6 +36,7 @@ public final class RocketLauncher {
     /**
      * Run a {@link org.rocket.dist.Rocket}
      * @param rocket a non-null rocket
+     * @deprecated Use {@link #takeOff(Rocket)} instead
      */
     @Deprecated
     public static void run(Rocket rocket) {
