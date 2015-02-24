@@ -9,6 +9,8 @@ import java.util.function.Consumer;
 public interface NetworkClient {
     EventBus getEventBus();
 
+    <T> MutProp<T> getProp(PropId pid);
+
     Future<Unit> write(Object msg);
     Future<Unit> transaction(Consumer<NetworkTransaction> fn);
     Future<Unit> close();

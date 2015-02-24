@@ -21,6 +21,13 @@ public interface MutProp<T> extends Prop<T> {
     void forget();
 
     /**
+     * Helper method.
+     */
+    default Prop<T> readonly() {
+        return this;
+    }
+
+    /**
      * Retrieve the underlying reference or assign it if not defined.
      * @param fn a lazy getter
      * @return the underlying reference
