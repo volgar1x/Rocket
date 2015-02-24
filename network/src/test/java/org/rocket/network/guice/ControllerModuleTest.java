@@ -5,15 +5,16 @@ import com.google.inject.Injector;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.rocket.network.Controller;
-import org.rocket.network.ControllerFactory;
-import org.rocket.network.NetworkClient;
+import org.rocket.network.*;
 
 import javax.inject.Inject;
 import java.util.Iterator;
 import java.util.Set;
 
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.nullValue;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
 
 public class ControllerModuleTest {
@@ -23,12 +24,14 @@ public class ControllerModuleTest {
     @Controller
     public static class TheController {
         @Inject NetworkClient client;
+        @Inject MutProp<String> name;
         @Inject Helper helper;
     }
 
     @Controller
     public static class AnotherController {
         @Inject NetworkClient client;
+        @Inject Prop<String> name;
     }
 
     public static class Helper {
@@ -79,5 +82,13 @@ public class ControllerModuleTest {
 
         AnotherController anotherController = (AnotherController) it.next();
         assertEquals("another controller's client", client, anotherController.client);
+
+        assertThat("controller prop 'name'", controller.name.orNull(), nullValue());
+        assertThat("another controller prop 'name'", anotherController.name.orEmpty(), nullValue());
+
+        controller.name.set("foobar");
+
+        assertThat("controller prop 'name'", controller.name.get(), equalTo("foobar"));
+        assertThat("another controller prop 'name'", anotherController.name.get(), equalTo("foobar"));
     }
 }
