@@ -6,3 +6,4 @@ org.rocket.network.acara
 org.rocket.network.event
 org.rocket.network.guice
 org.rocket.network.netty
+org.rocket.network.props
