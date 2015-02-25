@@ -75,7 +75,27 @@ public abstract class ControllerModule extends RocketModule {
     }
 
     private Key<?> keyFor(Field field) {
-        throw new Error("todo");
+        // find the first eligible annotation other than @Inject
+        // com.google.inject.Key only supports a single marker annotation
+        // a contrario of PropId which can handle any number of annotations
+        Annotation acc = null;
+        for (Annotation ann : field.getAnnotations()) {
+            if (Inject.class.isAssignableFrom(ann.annotationType())) {
+                continue;
+            }
+            if (com.google.inject.Inject.class.isAssignableFrom(ann.annotationType())) {
+                continue;
+            }
+
+            acc = ann;
+            break;
+        }
+
+        if (acc != null) {
+            return Key.get(field.getGenericType(), acc);
+        }
+
+        return Key.get(field.getGenericType());
     }
 
     private Key<?> wrap(Key<?> key, Class<?> wrapper) {
