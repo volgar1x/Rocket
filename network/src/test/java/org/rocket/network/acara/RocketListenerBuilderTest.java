@@ -28,7 +28,7 @@ public class RocketListenerBuilderTest {
 
     @Before
     public void setUp() throws Exception {
-        b = new RocketListenerBuilder();
+        b = new RocketListenerBuilder(Validations::reflectiveInstantiator);
         client = mock(NetworkClient.class);
         worker = Workers.wrap(MoreExecutors.directExecutor());
     }

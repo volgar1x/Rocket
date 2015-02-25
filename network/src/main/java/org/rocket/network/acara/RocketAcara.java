@@ -13,4 +13,8 @@ public final class RocketAcara {
     public static ListenerBuilder listeners() {
         return RocketListenerBuilder.instance;
     }
+
+    public static ListenerBuilder listeners(Validations.Instantiator validationInstantiator) {
+        return new RocketListenerBuilder(validationInstantiator);
+    }
 }

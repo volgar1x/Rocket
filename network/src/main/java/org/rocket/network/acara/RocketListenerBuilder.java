@@ -19,7 +19,13 @@ import java.util.stream.Stream;
 
 final class RocketListenerBuilder extends JavaListenerBuilder {
     private static final Logger logger = LoggerFactory.getLogger(RocketListenerBuilder.class);
-    public static final RocketListenerBuilder instance = new RocketListenerBuilder();
+    public static final RocketListenerBuilder instance = new RocketListenerBuilder(Validations::reflectiveInstantiator);
+
+    private final Validations.Instantiator validationInstantator;
+
+    RocketListenerBuilder(Validations.Instantiator validationInstantator) {
+        this.validationInstantator = validationInstantator;
+    }
 
     @Override
     protected Stream<Listener> scan(Object o, Method method) {
@@ -78,8 +84,8 @@ final class RocketListenerBuilder extends JavaListenerBuilder {
         return Stream.empty();
     }
 
-    static Listener wrapValidationIfNeeded(Listener listener, Method method, boolean hard) {
-        List<PropValidator> validators = Validations.fetchValidators(method, null);
+    Listener wrapValidationIfNeeded(Listener listener, Method method, boolean hard) {
+        List<PropValidator> validators = Validations.fetchValidators(method, validationInstantator);
         if (validators.isEmpty()) {
             return listener;
         }
