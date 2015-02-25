@@ -1,10 +1,10 @@
 package org.rocket.network.guice;
 
 import com.google.inject.Key;
+import com.google.inject.Provider;
 import com.google.inject.multibindings.Multibinder;
 import org.rocket.guice.RocketModule;
-import org.rocket.network.Controller;
-import org.rocket.network.Prop;
+import org.rocket.network.*;
 
 import javax.inject.Inject;
 import java.lang.annotation.Annotation;
@@ -62,13 +62,16 @@ public abstract class ControllerModule extends RocketModule {
         }
     }
 
+    @SuppressWarnings("unchecked")
     protected void newProp(Key<?> key) {
         if (boundPropKeys.contains(key)) {
             return;
         }
         boundPropKeys.add(key);
 
-        throw new Error("todo");
+        Provider provider = new PropProvider(getProvider(NetworkClient.class), asPropId(key));
+        bind(wrap(key, Prop.class)).toProvider(provider);
+        bind(wrap(key, MutProp.class)).toProvider(provider);
     }
 
     private Key<?> keyFor(Field field) {
@@ -79,4 +82,22 @@ public abstract class ControllerModule extends RocketModule {
         throw new Error("todo");
     }
 
+    private PropId asPropId(Key<?> key) {
+        throw new Error("todo");
+    }
+
+    private static class PropProvider implements Provider {
+        private final Provider<NetworkClient> client;
+        private final PropId pid;
+
+        private PropProvider(Provider<NetworkClient> client, PropId pid) {
+            this.client = client;
+            this.pid = pid;
+        }
+
+        @Override
+        public Object get() {
+            return client.get().getProp(pid);
+        }
+    }
 }
