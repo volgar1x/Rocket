@@ -1,26 +1,26 @@
 package org.rocket.network.props;
 
 import com.google.common.collect.ImmutableList;
+import org.fungsi.Either;
+import org.fungsi.Unit;
+import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InOrder;
-import org.rocket.network.MutProp;
-import org.rocket.network.NetworkClient;
-import org.rocket.network.PropId;
-import org.rocket.network.PropValidator;
+import org.rocket.network.*;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.reflect.AnnotatedElement;
 import java.util.List;
+import java.util.NoSuchElementException;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.fail;
-import static org.mockito.Mockito.inOrder;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 public class PropValidationsTest {
+
     @Retention(RetentionPolicy.RUNTIME)
     @PropPresence(String.class)
     @interface FooBar {}
@@ -30,14 +30,33 @@ public class PropValidationsTest {
     @PropPresence(Integer.class)
     private static void annotated() {}
 
+    private static final class BadValidator implements PropValidator {
+        public BadValidator(String yo, String lo) {}
+        public BadValidator(PropPresence notInStack) {}
+
+        @Override
+        public Either<Unit, Throwable> validate(NetworkClient client) {
+            return Unit.left();
+        }
+    }
+    @PropValidate(BadValidator.class)
+    private static void badlyValidated() {}
+
+
+    private PropValidatorInstantiator instantiator;
+
+    @Before
+    public void setUp() throws Exception {
+        instantiator = PropValidations::reflectiveInstantiator;
+    }
+
     @Test
     public void testFetchValidators() throws Exception {
         // given
         AnnotatedElement target = PropValidationsTest.class.getDeclaredMethod("annotated");
-        PropValidatorInstantiator ins = PropValidations::reflectiveInstantiator;
 
         // when
-        List<PropValidator> validators = PropValidations.fetchValidators(target, ins);
+        List<PropValidator> validators = PropValidations.fetchValidators(target, instantiator);
 
         // then
         assertThat(validators.size(), equalTo(2));
@@ -48,7 +67,7 @@ public class PropValidationsTest {
         // given
         NetworkClient client = mock(NetworkClient.class);
         AnnotatedElement target = PropValidationsTest.class.getDeclaredMethod("annotated");
-        List<PropValidator> validators = PropValidations.fetchValidators(target, PropValidations::reflectiveInstantiator);
+        List<PropValidator> validators = PropValidations.fetchValidators(target, instantiator);
         PropValidator validator = PropValidator.aggregate(ImmutableList.copyOf(validators));
 
         @SuppressWarnings("unchecked")
@@ -80,7 +99,7 @@ public class PropValidationsTest {
         // given
         NetworkClient client = mock(NetworkClient.class);
         AnnotatedElement target = PropValidationsTest.class.getDeclaredMethod("annotated");
-        List<PropValidator> validators = PropValidations.fetchValidators(target, PropValidations::reflectiveInstantiator);
+        List<PropValidator> validators = PropValidations.fetchValidators(target, instantiator);
         PropValidator validator = PropValidator.aggregate(ImmutableList.copyOf(validators));
 
         @SuppressWarnings("unchecked")
@@ -99,5 +118,16 @@ public class PropValidationsTest {
         // then
         fail();
 
+    }
+
+    @Test
+    public void testBadValidation() throws Exception {
+        try {
+            PropValidations.fetchValidators(PropValidationsTest.class.getDeclaredMethod("badlyValidated"), instantiator);
+            fail();
+        } catch (NoSuchElementException ignored) {
+        } catch (Exception e) {
+            fail();
+        }
     }
 }
