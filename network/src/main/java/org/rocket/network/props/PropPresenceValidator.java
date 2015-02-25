@@ -1,26 +1,22 @@
 package org.rocket.network.props;
 
-import org.rocket.network.MutProp;
-import org.rocket.network.NetworkClient;
-import org.rocket.network.PropId;
-import org.rocket.network.PropValidator;
+import org.fungsi.Either;
+import org.fungsi.Unit;
+import org.rocket.network.*;
 
 public class PropPresenceValidator implements PropValidator {
     private final PropId pid;
-    private String messageError;
+    private Either<Unit, Throwable> err;
 
     public PropPresenceValidator(PropPresence annotation) {
         this.pid = PropIds.type(annotation.value());
-        this.messageError = String.format(
-            "Prop %s must have a value", pid);
+        this.err = PropValidationException.of("Prop %s must have a value", pid);
     }
 
     @Override
-    public void validate(NetworkClient client) {
-        MutProp<Object> prop = client.getProp(pid);
-
-        if (!prop.isDefined()) {
-            throw new AssertionError(messageError);
-        }
+    public Either<Unit, Throwable> validate(NetworkClient client) {
+        return client.getProp(pid).isDefined()
+                ? Unit.left()
+                : err;
     }
 }
