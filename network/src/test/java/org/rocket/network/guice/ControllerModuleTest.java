@@ -12,10 +12,11 @@ import java.util.Iterator;
 import java.util.Set;
 
 import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.CoreMatchers.nullValue;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
+import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class ControllerModuleTest {
 
@@ -46,6 +47,7 @@ public class ControllerModuleTest {
                     @Override
                     protected void configure() {
                         newController(TheController.class);
+                        newProp(String.class);
                     }
                 },
                 new ControllerModule() {
@@ -68,6 +70,10 @@ public class ControllerModuleTest {
         // given
         NetworkClient client = mock(NetworkClient.class);
 
+        @SuppressWarnings("unchecked")
+        MutProp<Object> prop = mock(MutProp.class);
+        when(client.getProp(any())).thenReturn(prop);
+
         // when
         Set<Object> controllers = factory.create(client);
 
@@ -83,12 +89,7 @@ public class ControllerModuleTest {
         AnotherController anotherController = (AnotherController) it.next();
         assertEquals("another controller's client", client, anotherController.client);
 
-        assertThat("controller prop 'name'", controller.name.orNull(), nullValue());
-        assertThat("another controller prop 'name'", anotherController.name.orEmpty(), nullValue());
-
-        controller.name.set("foobar");
-
-        assertThat("controller prop 'name'", controller.name.get(), equalTo("foobar"));
-        assertThat("another controller prop 'name'", anotherController.name.get(), equalTo("foobar"));
+        assertThat("controllers' props", controller.name, equalTo(prop));
+        assertThat("controllers' props", anotherController.name, equalTo(prop));
     }
 }
