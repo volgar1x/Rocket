@@ -115,11 +115,12 @@ public class RocketListenerBuilderTest {
     }
 
     @Test
-    public void testScanValidated() throws Exception {
+    public void testScanValidatedFailure() throws Exception {
         @SuppressWarnings("unchecked")
         MutProp<Object> prop = mock(MutProp.class);
         PropId pid = PropIds.type(String.class);
         when(client.getProp(pid)).thenReturn(prop);
+        when(prop.isDefined()).thenReturn(false);
 
         Object[] tmp = b.build(new WithValidation()).toArray();
         Listener hard = (Listener) tmp[0];
@@ -129,6 +130,25 @@ public class RocketListenerBuilderTest {
         Future<Object> softResp = soft.dispatch(new ReceiveEvent(client, "bar"), worker);
 
         assertTrue("hard response is failure", hardResp.isFailure());
+        assertTrue("soft response is success", softResp.isSuccess());
+    }
+
+    @Test
+    public void testScanValidatedSuccess() throws Exception {
+        @SuppressWarnings("unchecked")
+        MutProp<Object> prop = mock(MutProp.class);
+        PropId pid = PropIds.type(String.class);
+        when(client.getProp(pid)).thenReturn(prop);
+        when(prop.isDefined()).thenReturn(true);
+
+        Object[] tmp = b.build(new WithValidation()).toArray();
+        Listener hard = (Listener) tmp[0];
+        Listener soft = (Listener) tmp[1];
+
+        Future<Object> hardResp = hard.dispatch(new ReceiveEvent(client, "foo"), worker);
+        Future<Object> softResp = soft.dispatch(new ReceiveEvent(client, "bar"), worker);
+
+        assertTrue("hard response is failure", hardResp.isSuccess());
         assertTrue("soft response is success", softResp.isSuccess());
     }
 }
