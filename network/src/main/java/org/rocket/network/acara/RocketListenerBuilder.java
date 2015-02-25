@@ -2,11 +2,10 @@ package org.rocket.network.acara;
 
 import com.github.blackrush.acara.*;
 import org.fungsi.concurrent.Future;
+import org.fungsi.concurrent.Futures;
 import org.fungsi.concurrent.Worker;
-import org.rocket.network.Connect;
-import org.rocket.network.Disconnect;
-import org.rocket.network.Receive;
-import org.rocket.network.Supervise;
+import org.rocket.network.*;
+import org.rocket.network.event.NetworkEvent;
 import org.rocket.network.event.ReceiveEvent;
 import org.rocket.network.event.SuperviseEvent;
 import org.slf4j.Logger;
@@ -100,6 +99,55 @@ final class RocketListenerBuilder extends JavaListenerBuilder {
         @Override
         protected Object invoke(Object state, Method behavior, SuperviseEvent event) throws Throwable {
             return behavior.invoke(state, event.getException());
+        }
+    }
+
+    final class HardValidator extends Listener {
+        final Listener underlying;
+        final PropValidator validator;
+
+        HardValidator(Listener underlying, PropValidator validator) {
+            this.underlying = underlying;
+            this.validator = validator;
+        }
+
+        @Override
+        public EventMetadata getHandledEvent() {
+            return underlying.getHandledEvent();
+        }
+
+        @Override
+        public Future<Object> dispatch(Object event, Worker worker) {
+            NetworkEvent evt = (NetworkEvent) event;
+            NetworkClient client = evt.getClient();
+            return Future.constant(validator.validate(client))
+                .flatMap(u -> underlying.dispatch(event, worker));
+        }
+    }
+
+    final class SoftValidator extends Listener {
+        final Listener underlying;
+        final PropValidator validator;
+
+        SoftValidator(Listener underlying, PropValidator validator) {
+            this.underlying = underlying;
+            this.validator = validator;
+        }
+
+        @Override
+        public EventMetadata getHandledEvent() {
+            return underlying.getHandledEvent();
+        }
+
+        @Override
+        public Future<Object> dispatch(Object event, Worker worker) {
+            NetworkEvent evt = (NetworkEvent) event;
+            NetworkClient client = evt.getClient();
+            if (!validator.softValidate(client)) {
+                return underlying.dispatch(event, worker);
+            }
+            //noinspection unchecked
+            return (Future) Futures.unit();
         }
     }
 }
