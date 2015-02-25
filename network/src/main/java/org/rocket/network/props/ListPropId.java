@@ -107,8 +107,9 @@ public interface ListPropId extends PropId, Iterable<PropId> {
 
         @Override
         public PropId next() {
+            PropId pid = cur.head();
             cur = cur.tail();
-            return cur.head();
+            return pid;
         }
     }
 }
