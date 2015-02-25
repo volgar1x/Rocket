@@ -7,9 +7,12 @@ import org.rocket.network.PropValidator;
 
 public class PropPresenceValidator implements PropValidator {
     private final PropId pid;
+    private String messageError;
 
     public PropPresenceValidator(PropPresence annotation) {
         this.pid = PropIds.type(annotation.value());
+        this.messageError = String.format(
+            "Prop %s must have a value", pid);
     }
 
     @Override
@@ -17,9 +20,7 @@ public class PropPresenceValidator implements PropValidator {
         MutProp<Object> prop = client.getProp(pid);
 
         if (!prop.isDefined()) {
-            throw new AssertionError(String.format(
-                    "Prop %s must have a value",
-                    prop.getId()));
+            throw new AssertionError(messageError);
         }
     }
 }
