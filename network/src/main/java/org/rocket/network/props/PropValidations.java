@@ -1,4 +1,4 @@
-package org.rocket.network.acara;
+package org.rocket.network.props;
 
 import org.rocket.network.PropValidate;
 import org.rocket.network.PropValidator;
@@ -8,13 +8,8 @@ import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.Constructor;
 import java.util.*;
 
-final class Validations {
-    private Validations() {}
-
-    @FunctionalInterface
-    static interface Instantiator {
-        PropValidator instantiate(Class<? extends PropValidator> klass, Deque<Annotation> stack) throws Exception;
-    }
+public final class PropValidations {
+    private PropValidations() {}
 
     public static PropValidator reflectiveInstantiator(Class<? extends PropValidator> klass, Deque<Annotation> stack) throws Exception {
         for (Constructor<?> ctor : klass.getConstructors()) {
@@ -35,7 +30,7 @@ final class Validations {
         throw new NoSuchElementException();
     }
 
-    public static List<PropValidator> fetchValidators(AnnotatedElement ele, Instantiator ins) {
+    public static List<PropValidator> fetchValidators(AnnotatedElement ele, PropValidatorInstantiator ins) {
         List<PropValidator> validators = new ArrayList<>();
         Deque<AnnotatedElement> stack = new LinkedList<>();
         Deque<Annotation> annStack = new LinkedList<>();
@@ -52,7 +47,7 @@ final class Validations {
         return null;
     }
 
-    private static void fetchValidators(AnnotatedElement ele, Instantiator ins, List<PropValidator> validators, Deque<AnnotatedElement> stack, Deque<Annotation> annStack) {
+    private static void fetchValidators(AnnotatedElement ele, PropValidatorInstantiator ins, List<PropValidator> validators, Deque<AnnotatedElement> stack, Deque<Annotation> annStack) {
         stack.addLast(ele);
         try {
             for (Annotation annotation : ele.getAnnotations()) {

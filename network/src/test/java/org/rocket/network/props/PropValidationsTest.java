@@ -1,4 +1,4 @@
-package org.rocket.network.acara;
+package org.rocket.network.props;
 
 import com.google.common.collect.ImmutableList;
 import org.junit.Test;
@@ -7,8 +7,6 @@ import org.rocket.network.MutProp;
 import org.rocket.network.NetworkClient;
 import org.rocket.network.PropId;
 import org.rocket.network.PropValidator;
-import org.rocket.network.props.PropIds;
-import org.rocket.network.props.PropPresence;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -22,7 +20,7 @@ import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class ValidationsTest {
+public class PropValidationsTest {
     @Retention(RetentionPolicy.RUNTIME)
     @PropPresence(String.class)
     @interface FooBar {}
@@ -35,11 +33,11 @@ public class ValidationsTest {
     @Test
     public void testFetchValidators() throws Exception {
         // given
-        AnnotatedElement target = ValidationsTest.class.getDeclaredMethod("annotated");
-        Validations.Instantiator ins = Validations::reflectiveInstantiator;
+        AnnotatedElement target = PropValidationsTest.class.getDeclaredMethod("annotated");
+        PropValidatorInstantiator ins = PropValidations::reflectiveInstantiator;
 
         // when
-        List<PropValidator> validators = Validations.fetchValidators(target, ins);
+        List<PropValidator> validators = PropValidations.fetchValidators(target, ins);
 
         // then
         assertThat(validators.size(), equalTo(2));
@@ -49,8 +47,8 @@ public class ValidationsTest {
     public void testValidateSuccess() throws Exception {
         // given
         NetworkClient client = mock(NetworkClient.class);
-        AnnotatedElement target = ValidationsTest.class.getDeclaredMethod("annotated");
-        List<PropValidator> validators = Validations.fetchValidators(target, Validations::reflectiveInstantiator);
+        AnnotatedElement target = PropValidationsTest.class.getDeclaredMethod("annotated");
+        List<PropValidator> validators = PropValidations.fetchValidators(target, PropValidations::reflectiveInstantiator);
         PropValidator validator = PropValidator.aggregate(ImmutableList.copyOf(validators));
 
         @SuppressWarnings("unchecked")
@@ -81,8 +79,8 @@ public class ValidationsTest {
     public void testValidateFailure() throws Exception {
         // given
         NetworkClient client = mock(NetworkClient.class);
-        AnnotatedElement target = ValidationsTest.class.getDeclaredMethod("annotated");
-        List<PropValidator> validators = Validations.fetchValidators(target, Validations::reflectiveInstantiator);
+        AnnotatedElement target = PropValidationsTest.class.getDeclaredMethod("annotated");
+        List<PropValidator> validators = PropValidations.fetchValidators(target, PropValidations::reflectiveInstantiator);
         PropValidator validator = PropValidator.aggregate(ImmutableList.copyOf(validators));
 
         @SuppressWarnings("unchecked")

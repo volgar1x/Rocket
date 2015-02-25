@@ -14,6 +14,7 @@ import org.rocket.network.event.ReceiveEvent;
 import org.rocket.network.event.SuperviseEvent;
 import org.rocket.network.props.PropIds;
 import org.rocket.network.props.PropPresence;
+import org.rocket.network.props.PropValidations;
 
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.*;
@@ -28,7 +29,7 @@ public class RocketListenerBuilderTest {
 
     @Before
     public void setUp() throws Exception {
-        b = new RocketListenerBuilder(Validations::reflectiveInstantiator);
+        b = new RocketListenerBuilder(PropValidations::reflectiveInstantiator);
         client = mock(NetworkClient.class);
         worker = Workers.wrap(MoreExecutors.directExecutor());
     }

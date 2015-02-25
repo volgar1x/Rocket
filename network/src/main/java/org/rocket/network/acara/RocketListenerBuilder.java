@@ -9,6 +9,8 @@ import org.rocket.network.*;
 import org.rocket.network.event.NetworkEvent;
 import org.rocket.network.event.ReceiveEvent;
 import org.rocket.network.event.SuperviseEvent;
+import org.rocket.network.props.PropValidations;
+import org.rocket.network.props.PropValidatorInstantiator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -19,11 +21,11 @@ import java.util.stream.Stream;
 
 final class RocketListenerBuilder extends JavaListenerBuilder {
     private static final Logger logger = LoggerFactory.getLogger(RocketListenerBuilder.class);
-    public static final RocketListenerBuilder instance = new RocketListenerBuilder(Validations::reflectiveInstantiator);
+    public static final RocketListenerBuilder instance = new RocketListenerBuilder(PropValidations::reflectiveInstantiator);
 
-    private final Validations.Instantiator validationInstantator;
+    private final PropValidatorInstantiator validationInstantator;
 
-    RocketListenerBuilder(Validations.Instantiator validationInstantator) {
+    RocketListenerBuilder(PropValidatorInstantiator validationInstantator) {
         this.validationInstantator = validationInstantator;
     }
 
@@ -85,7 +87,7 @@ final class RocketListenerBuilder extends JavaListenerBuilder {
     }
 
     Listener wrapValidationIfNeeded(Listener listener, Method method, boolean hard) {
-        List<PropValidator> validators = Validations.fetchValidators(method, validationInstantator);
+        List<PropValidator> validators = PropValidations.fetchValidators(method, validationInstantator);
         if (validators.isEmpty()) {
             return listener;
         }
