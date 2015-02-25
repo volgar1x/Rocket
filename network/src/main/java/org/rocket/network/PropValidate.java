@@ -1,9 +1,12 @@
 package org.rocket.network;
 
-public @interface PropValidate {
-    Class<? extends PropValidator> validator() default NullValidator.class;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
-    public static class NullValidator implements PropValidator<Object> {
-        @Override public void validate(Prop<Object> prop) { }
-    }
+@Retention(RetentionPolicy.RUNTIME)
+@Target({ElementType.METHOD, ElementType.ANNOTATION_TYPE})
+public @interface PropValidate {
+    Class<? extends PropValidator> value();
 }
