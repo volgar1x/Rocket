@@ -5,26 +5,54 @@ import org.rocket.network.PropValidator;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.AnnotatedElement;
-import java.util.ArrayList;
-import java.util.Deque;
-import java.util.LinkedList;
-import java.util.List;
+import java.lang.reflect.Constructor;
+import java.util.*;
 
 final class Validations {
     private Validations() {}
 
+    @FunctionalInterface
     static interface Instantiator {
-        PropValidator<?> instantiate(Class<PropValidator<?>> klass) throws Exception;
+        PropValidator instantiate(Class<? extends PropValidator> klass, Deque<Annotation> stack) throws Exception;
     }
 
-    public static List<PropValidator<?>> fetchValidators(AnnotatedElement ele, Instantiator ins) {
-        List<PropValidator<?>> validators = new ArrayList<>();
+    public static PropValidator reflectiveInstantiator(Class<? extends PropValidator> klass, Deque<Annotation> stack) throws Exception {
+        for (Constructor<?> ctor : klass.getConstructors()) {
+            if (ctor.getParameterCount() != 1) {
+                continue;
+            }
+
+            Class<?> param = ctor.getParameterTypes()[0];
+            Annotation ele = firstOfType(stack, param);
+            if (ele == null) {
+                continue;
+            }
+
+            ctor.setAccessible(true);
+            return (PropValidator) ctor.newInstance(ele);
+        }
+
+        throw new NoSuchElementException();
+    }
+
+    public static List<PropValidator> fetchValidators(AnnotatedElement ele, Instantiator ins) {
+        List<PropValidator> validators = new ArrayList<>();
         Deque<AnnotatedElement> stack = new LinkedList<>();
-        fetchValidators(ele, ins, validators, stack);
+        Deque<Annotation> annStack = new LinkedList<>();
+        fetchValidators(ele, ins, validators, stack, annStack);
         return validators;
     }
 
-    private static void fetchValidators(AnnotatedElement ele, Instantiator ins, List<PropValidator<?>> validators, Deque<AnnotatedElement> stack) {
+    private static Annotation firstOfType(Deque<Annotation> stack, Class<?> klass) {
+        for (Annotation element : stack) {
+            if (klass.isInstance(element)) {
+                return element;
+            }
+        }
+        return null;
+    }
+
+    private static void fetchValidators(AnnotatedElement ele, Instantiator ins, List<PropValidator> validators, Deque<AnnotatedElement> stack, Deque<Annotation> annStack) {
         stack.addLast(ele);
         try {
             for (Annotation annotation : ele.getAnnotations()) {
@@ -32,15 +60,18 @@ final class Validations {
                     continue;
                 }
 
-                if (annotation.annotationType() == PropValidate.class) {
-                    PropValidate ann = (PropValidate) annotation;
+                annStack.addLast(annotation);
+                try {
+                    if (annotation.annotationType() == PropValidate.class) {
+                        PropValidate ann = (PropValidate) annotation;
 
-                    @SuppressWarnings("unchecked")
-                    PropValidator<?> validator = ins.instantiate((Class) ann.value());
-
-                    validators.add(validator);
-                } else {
-                    fetchValidators(annotation.annotationType(), ins, validators, stack);
+                        PropValidator validator = ins.instantiate(ann.value(), annStack);
+                        validators.add(validator);
+                    } else {
+                        fetchValidators(annotation.annotationType(), ins, validators, stack, annStack);
+                    }
+                } finally {
+                    annStack.removeLast();
                 }
             }
         } catch (Exception e) {
