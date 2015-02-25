@@ -4,13 +4,20 @@ import org.rocket.network.PropId;
 
 import java.util.Iterator;
 
-interface ListPropId extends PropId, Iterable<PropId> {
+public interface ListPropId extends PropId, Iterable<PropId> {
     PropId head();
     ListPropId tail();
 
     @Override
     default Iterator<PropId> iterator() {
         return new Itr(this);
+    }
+
+    default PropId unwrapSingleton() {
+        if (tail() == Nil) {
+            return head();
+        }
+        return this;
     }
 
     public static ListPropId cons(PropId head, ListPropId tail) {
