@@ -2,11 +2,15 @@ package org.rocket.network.netty;
 
 import com.github.blackrush.acara.EventBus;
 import io.netty.channel.Channel;
+import io.netty.util.Attribute;
+import io.netty.util.AttributeKey;
 import org.fungsi.Unit;
 import org.fungsi.concurrent.Future;
 import org.fungsi.concurrent.Futures;
+import org.rocket.network.MutProp;
 import org.rocket.network.NetworkClient;
 import org.rocket.network.NetworkTransaction;
+import org.rocket.network.PropId;
 
 import java.util.function.Consumer;
 
@@ -20,8 +24,6 @@ final class NettyClient implements NetworkClient {
         this.id = id;
         this.eventBus = eventBus;
     }
-
-
 
     @Override
     public EventBus getEventBus() {
@@ -45,6 +47,13 @@ final class NettyClient implements NetworkClient {
     @Override
     public Future<Unit> close() {
         return RocketNetty.toFungsi(channel.close()).toUnit();
+    }
+
+    @Override
+    public <T> MutProp<T> getProp(PropId pid) {
+        AttributeKey<T> key = NettyMutProp.asAttributeKey(pid);
+        Attribute<T> attr = channel.attr(key);
+        return new NettyMutProp<>(pid, this, attr);
     }
 
     @Override

@@ -4,14 +4,14 @@ import com.github.blackrush.acara.EventBus;
 import com.github.blackrush.acara.Subscription;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.*;
+import io.netty.util.Attribute;
+import io.netty.util.AttributeKey;
 import org.fungsi.Unit;
 import org.fungsi.concurrent.Future;
 import org.fungsi.concurrent.Futures;
 import org.rocket.ServicePath;
 import org.rocket.StartReason;
-import org.rocket.network.ControllerFactory;
-import org.rocket.network.NetworkClientService;
-import org.rocket.network.NetworkTransaction;
+import org.rocket.network.*;
 import org.rocket.network.event.ConnectEvent;
 import org.rocket.network.event.ReceiveEvent;
 import org.rocket.network.event.SuperviseEvent;
@@ -115,6 +115,13 @@ final class NettyClientService extends ChannelInboundHandlerAdapter implements N
     @Override
     public Future<Unit> close() {
         return RocketNetty.toFungsi(chan.close()).toUnit();
+    }
+
+    @Override
+    public <T> MutProp<T> getProp(PropId pid) {
+        AttributeKey<T> key = NettyMutProp.asAttributeKey(pid);
+        Attribute<T> attr = chan.attr(key);
+        return new NettyMutProp<>(pid, this, attr);
     }
 
     @Override
