@@ -12,10 +12,13 @@ import org.rocket.network.*;
 import org.rocket.network.event.ConnectEvent;
 import org.rocket.network.event.ReceiveEvent;
 import org.rocket.network.event.SuperviseEvent;
+import org.rocket.network.props.PropIds;
+import org.rocket.network.props.PropPresence;
 
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class RocketListenerBuilderTest {
 
@@ -41,6 +44,15 @@ public class RocketListenerBuilderTest {
     }
     static class WithSupervise {
         @Supervise public void method(NullPointerException e) {}
+    }
+    static class WithValidation {
+        @PropPresence(String.class)
+        @Receive
+        public void hard(Object msg) {}
+
+        @PropPresence(String.class)
+        @Receive(softValidation = true)
+        public void soft(Object msg) {}
     }
     static class Invalids {
         @Connect public void toomuch1(String arguments) {}
@@ -99,5 +111,23 @@ public class RocketListenerBuilderTest {
         long count = b.build(new Invalids()).count();
 
         assertThat("scanned listeners", count, equalTo(0L));
+    }
+
+    @Test
+    public void testScanValidated() throws Exception {
+        @SuppressWarnings("unchecked")
+        MutProp<Object> prop = mock(MutProp.class);
+        PropId pid = PropIds.type(String.class);
+        when(client.getProp(pid)).thenReturn(prop);
+
+        Object[] tmp = b.build(new WithValidation()).toArray();
+        Listener hard = (Listener) tmp[0];
+        Listener soft = (Listener) tmp[1];
+
+        Future<Object> hardResp = hard.dispatch(new ReceiveEvent(client, "foo"), worker);
+        Future<Object> softResp = soft.dispatch(new ReceiveEvent(client, "bar"), worker);
+
+        assertTrue("hard response is failure", hardResp.isFailure());
+        assertTrue("soft response is success", softResp.isSuccess());
     }
 }
