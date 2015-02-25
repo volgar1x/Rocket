@@ -1,6 +1,7 @@
 package org.rocket.network.acara;
 
 import com.github.blackrush.acara.*;
+import com.google.common.collect.ImmutableList;
 import org.fungsi.concurrent.Future;
 import org.fungsi.concurrent.Futures;
 import org.fungsi.concurrent.Worker;
@@ -13,6 +14,7 @@ import org.slf4j.LoggerFactory;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
+import java.util.List;
 import java.util.stream.Stream;
 
 final class RocketListenerBuilder extends JavaListenerBuilder {
@@ -30,11 +32,18 @@ final class RocketListenerBuilder extends JavaListenerBuilder {
                 logger.warn("{} is annotated with {} but has an invalid signature", method, ann);
                 return Stream.empty();
             }
+
             boolean disconnecting = method.isAnnotationPresent(Disconnect.class);
             EventMetadata metadata = new Events.ConnectEventMetadata(disconnecting);
             Listener listener = new ConnectEventListener(metadata, o, method);
+
+            // @Connect we don't want to crash a freshly created connection, soft validation then
+            // @Disconnect the connection is gone, does it really matter if a hard validation fails? (hint: no)
+            listener = wrapValidationIfNeeded(listener, method, false);
+
             return Stream.of(listener);
         } else if (method.isAnnotationPresent(Receive.class)) {
+            Receive annotation = method.getAnnotation(Receive.class);
             if (method.getParameterCount() != 1) {
                 logger.warn("{} is annotated with org.rocket.network.Receive but has an invalid signature", method);
                 return Stream.empty();
@@ -43,6 +52,12 @@ final class RocketListenerBuilder extends JavaListenerBuilder {
             Class<?> messageClass = method.getParameterTypes()[0];
             TypedEventMetadata<ReceiveEvent> metadata = new Events.ComponentWiseEventMetadata<>(messageClass);
             Listener listener = new ReceiveEventListener(metadata, o, method);
+
+            // @Receive may or may not want hard validation
+            // it will hard validate by default, and that's the recommended setting
+            // but sometimes one may want a soft validation instead
+            listener = wrapValidationIfNeeded(listener, method, !annotation.softValidation());
+
             return Stream.of(listener);
         } else if (method.isAnnotationPresent(Supervise.class)) {
             if (method.getParameterCount() != 1) {
@@ -53,9 +68,25 @@ final class RocketListenerBuilder extends JavaListenerBuilder {
             Class<?> exceptionClass = method.getParameterTypes()[0];
             TypedEventMetadata<SuperviseEvent> metadata = new Events.ComponentWiseEventMetadata<>(exceptionClass);
             Listener listener = new SuperviseEventListener(metadata, o, method);
+
+            // @Supervise is the last shot to make things work
+            // we do not want hard validations that might get things even worse
+            listener = wrapValidationIfNeeded(listener, method, false);
+
             return Stream.of(listener);
         }
         return Stream.empty();
+    }
+
+    Listener wrapValidationIfNeeded(Listener listener, Method method, boolean hard) {
+        List<PropValidator> validators = Validations.fetchValidators(method, null);
+        if (validators.isEmpty()) {
+            return listener;
+        }
+
+        PropValidator validator = PropValidator.aggregate(ImmutableList.copyOf(validators));
+        return hard ? new HardValidator(listener, validator)
+                    : new SoftValidator(listener, validator);
     }
 
     final class ConnectEventListener extends Listener {
