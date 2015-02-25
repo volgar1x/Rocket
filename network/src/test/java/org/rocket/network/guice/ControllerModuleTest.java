@@ -45,13 +45,13 @@ public class ControllerModuleTest {
                 new ControllerModule() {
                     @Override
                     protected void configure() {
-                        newController().to(TheController.class);
+                        newController(TheController.class);
                     }
                 },
                 new ControllerModule() {
                     @Override
                     protected void configure() {
-                        newController().to(AnotherController.class);
+                        newController(AnotherController.class);
                     }
                 }
         );
