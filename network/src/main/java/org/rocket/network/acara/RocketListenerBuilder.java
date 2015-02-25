@@ -78,7 +78,7 @@ final class RocketListenerBuilder extends JavaListenerBuilder {
         return Stream.empty();
     }
 
-    Listener wrapValidationIfNeeded(Listener listener, Method method, boolean hard) {
+    static Listener wrapValidationIfNeeded(Listener listener, Method method, boolean hard) {
         List<PropValidator> validators = Validations.fetchValidators(method, null);
         if (validators.isEmpty()) {
             return listener;
@@ -89,7 +89,7 @@ final class RocketListenerBuilder extends JavaListenerBuilder {
                     : new SoftValidator(listener, validator);
     }
 
-    final class ConnectEventListener extends Listener {
+    static final class ConnectEventListener extends Listener {
         final EventMetadata metadata;
         final Object state;
         final Method behavior;
@@ -111,7 +111,7 @@ final class RocketListenerBuilder extends JavaListenerBuilder {
         }
     }
 
-    final class ReceiveEventListener extends JavaListener<ReceiveEvent> {
+    static final class ReceiveEventListener extends JavaListener<ReceiveEvent> {
         ReceiveEventListener(TypedEventMetadata<ReceiveEvent> signature, Object state, Method behavior) {
             super(signature, state, behavior);
         }
@@ -122,7 +122,7 @@ final class RocketListenerBuilder extends JavaListenerBuilder {
         }
     }
 
-    final class SuperviseEventListener extends JavaListener<SuperviseEvent> {
+    static final class SuperviseEventListener extends JavaListener<SuperviseEvent> {
         SuperviseEventListener(TypedEventMetadata<SuperviseEvent> signature, Object state, Method behavior) {
             super(signature, state, behavior);
         }
@@ -133,7 +133,7 @@ final class RocketListenerBuilder extends JavaListenerBuilder {
         }
     }
 
-    final class HardValidator extends Listener {
+    static final class HardValidator extends Listener {
         final Listener underlying;
         final PropValidator validator;
 
@@ -156,7 +156,7 @@ final class RocketListenerBuilder extends JavaListenerBuilder {
         }
     }
 
-    final class SoftValidator extends Listener {
+    static final class SoftValidator extends Listener {
         final Listener underlying;
         final PropValidator validator;
 
