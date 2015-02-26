@@ -13,4 +13,7 @@ import java.lang.annotation.Target;
 public @interface PropPresence {
     Class<?> value();
     boolean presence() default true;
+    String message() default NIL;
+
+    public static final String NIL = "YOU MUST NEVER USE THIS STRING AS THIS ANNOTATION PARAMETER MESSAGE";
 }

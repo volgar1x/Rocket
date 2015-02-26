@@ -9,4 +9,7 @@ import java.lang.annotation.Target;
 @Target({ElementType.METHOD, ElementType.ANNOTATION_TYPE, ElementType.TYPE})
 public @interface PropValidate {
     Class<? extends PropValidator> value();
+    String message() default NIL;
+
+    public static final String NIL = "YOU MUST NEVER USE THIS STRING AS THIS ANNOTATION PARAMETER MESSAGE";
 }
