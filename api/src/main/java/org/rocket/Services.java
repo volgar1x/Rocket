@@ -31,11 +31,11 @@ public final class Services {
      * @param services a non-structured collection of services
      * @return the built graph of services
      */
-    public static ServiceGraph newGraph(Collection<Service> services) {
+    public static ServiceGraph newGraph(Set<Service> services) {
         return newGraphInternal(services);
     }
 
-    static Graph newGraphInternal(Collection<Service> services) {
+    static Graph newGraphInternal(Set<Service> services) {
         // for test only
         List<Service> newServices = new LinkedList<>(services);
         Graph graph = root();

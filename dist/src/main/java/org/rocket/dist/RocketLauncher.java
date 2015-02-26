@@ -45,7 +45,7 @@ public final class RocketLauncher {
         ServiceGraph services = findBindings(rocket.createInjector(), Key.get(Service.class))
                 .<Service>map(x -> x.getProvider().get())
                 .collect(Collectors.collectingAndThen(
-                        Collectors.toList(),
+                        Collectors.toSet(),
                         Services::newGraph));
 
         // fold services
