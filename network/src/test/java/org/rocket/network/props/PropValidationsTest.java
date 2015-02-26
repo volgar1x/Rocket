@@ -41,7 +41,7 @@ public class PropValidationsTest {
         public BadValidator(PropPresence notInStack) {}
 
         @Override
-        public Either<Unit, Throwable> validate(NetworkClient client) {
+        public Either<Unit, Throwable> validate(NetworkClient client, PropValidated target) {
             return Unit.left();
         }
     }
@@ -89,7 +89,7 @@ public class PropValidationsTest {
         when(client.getProp(strpid)).thenReturn(strProp);
         when(client.getProp(intpid)).thenReturn(intProp);
 
-        validator.validate(client);
+        validator.validate(client, PropValidated.here());
 
         // then
         InOrder o = inOrder(client, strProp, intProp);
@@ -119,7 +119,7 @@ public class PropValidationsTest {
         when(client.getProp(PropIds.type(String.class))).thenReturn(strProp);
         when(client.getProp(PropIds.type(Integer.class))).thenReturn(intProp);
 
-        validator.hardValidate(client);
+        validator.hardValidate(client, PropValidated.here());
 
         // then
         fail();
@@ -150,7 +150,7 @@ public class PropValidationsTest {
 
         List<PropValidator> validators = PropValidations.fetchValidators(target, instantiator);
         PropValidator first = validators.get(0);
-        Either<Unit, Throwable> result = first.validate(client);
+        Either<Unit, Throwable> result = first.validate(client, PropValidated.here());
 
         assertEquals("returned validators number", 1, validators.size());
         assertTrue("result is a success", result.isLeft());

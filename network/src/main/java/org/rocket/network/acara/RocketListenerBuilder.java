@@ -140,10 +140,10 @@ final class RocketListenerBuilder extends JavaListenerBuilder {
     }
 
     static final class HardValidator extends Listener {
-        final Listener underlying;
+        final JavaListener<?> underlying;
         final PropValidator validator;
 
-        HardValidator(Listener underlying, PropValidator validator) {
+        HardValidator(JavaListener<?> underlying, PropValidator validator) {
             this.underlying = underlying;
             this.validator = validator;
         }
@@ -157,16 +157,17 @@ final class RocketListenerBuilder extends JavaListenerBuilder {
         public Future<Object> dispatch(Object state, Object event, Worker worker) {
             NetworkEvent evt = (NetworkEvent) event;
             NetworkClient client = evt.getClient();
-            return Future.constant(validator.validate(client))
+            PropValidated location = PropValidated.forMethod(underlying.getBehavior());
+            return Future.constant(validator.validate(client, location))
                 .flatMap(u -> underlying.dispatch(state, event, worker));
         }
     }
 
     static final class SoftValidator extends Listener {
-        final Listener underlying;
+        final JavaListener<?> underlying;
         final PropValidator validator;
 
-        SoftValidator(Listener underlying, PropValidator validator) {
+        SoftValidator(JavaListener<?> underlying, PropValidator validator) {
             this.underlying = underlying;
             this.validator = validator;
         }
@@ -180,7 +181,8 @@ final class RocketListenerBuilder extends JavaListenerBuilder {
         public Future<Object> dispatch(Object state, Object event, Worker worker) {
             NetworkEvent evt = (NetworkEvent) event;
             NetworkClient client = evt.getClient();
-            if (validator.softValidate(client)) {
+            PropValidated location = PropValidated.forMethod(underlying.getBehavior());
+            if (validator.softValidate(client, location)) {
                 return underlying.dispatch(state, event, worker);
             }
             //noinspection unchecked
