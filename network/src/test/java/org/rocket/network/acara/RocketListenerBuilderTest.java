@@ -55,6 +55,12 @@ public class RocketListenerBuilderTest {
         @Receive(softValidation = true)
         public void soft(Object msg) {}
     }
+    @PropPresence(String.class)
+    static class WithValidationOnClass {
+        @PropPresence(Integer.class)
+        @Receive
+        public void validated(Object msg) {}
+    }
     static class Invalids {
         @Connect public void toomuch1(String arguments) {}
         @Disconnect public void toomuch2(String arguments) {}
@@ -185,6 +191,39 @@ public class RocketListenerBuilderTest {
         InOrder o = inOrder(state);
         o.verify(state).hard("foo");
         o.verify(state).soft("bar");
+        o.verifyNoMoreInteractions();
+    }
+
+    @Test
+    public void testScanValidatedOnClass() throws Exception {
+        // given
+        WithValidationOnClass state = spy(new WithValidationOnClass());
+
+        @SuppressWarnings("unchecked")
+        MutProp<Object> strProp = mock(MutProp.class),
+                        intProp = mock(MutProp.class);
+        PropId strPid = PropIds.type(String.class),
+                intPid = PropIds.type(Integer.class);
+        NetworkClient client = mock(NetworkClient.class);
+
+        // when
+        when(client.getProp(strPid)).thenReturn(strProp);
+        when(strProp.isDefined()).thenReturn(true);
+        when(client.getProp(intPid)).thenReturn(intProp);
+        when(intProp.isDefined()).thenReturn(true);
+
+        Listener l = b.build(state).collect(MoreCollectors.uniq());
+        Future<Object> resp = l.dispatch(state, new ReceiveEvent(client, "foobar"), worker);
+
+        // then
+        assertTrue("response is successful", resp.isSuccess());
+
+        InOrder o = inOrder(state, client, strProp, intProp);
+        o.verify(client).getProp(strPid);
+        o.verify(strProp).isDefined();
+        o.verify(client).getProp(intPid);
+        o.verify(intProp).isDefined();
+        o.verify(state).validated("foobar");
         o.verifyNoMoreInteractions();
     }
 }
