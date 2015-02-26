@@ -172,7 +172,7 @@ final class RocketListenerBuilder extends JavaListenerBuilder {
         public Future<Object> dispatch(Object state, Object event, Worker worker) {
             NetworkEvent evt = (NetworkEvent) event;
             NetworkClient client = evt.getClient();
-            if (!validator.softValidate(client)) {
+            if (validator.softValidate(client)) {
                 return underlying.dispatch(state, event, worker);
             }
             //noinspection unchecked
