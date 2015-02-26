@@ -65,10 +65,12 @@ public class RocketListenerBuilderTest {
 
     @Test
     public void testScanConnect() throws Exception {
-        Listener l = b.build(new WithConnect()).collect(MoreCollectors.uniq());
+        WithConnect state = new WithConnect();
+
+        Listener l = b.build(state).collect(MoreCollectors.uniq());
         Events.ConnectEventMetadata meta = (Events.ConnectEventMetadata) l.getHandledEvent();
 
-        Future<Object> resp = l.dispatch(new ConnectEvent(client, false), worker);
+        Future<Object> resp = l.dispatch(state, new ConnectEvent(client, false), worker);
 
         assertFalse("disconnecting", meta.disconnecting);
         assertTrue("dispatch response is success", resp.isSuccess());
@@ -76,10 +78,12 @@ public class RocketListenerBuilderTest {
 
     @Test
     public void testScanDisconnect() throws Exception {
-        Listener l = b.build(new WithDisconnect()).collect(MoreCollectors.uniq());
+        WithDisconnect state = new WithDisconnect();
+
+        Listener l = b.build(state).collect(MoreCollectors.uniq());
         Events.ConnectEventMetadata meta = (Events.ConnectEventMetadata) l.getHandledEvent();
 
-        Future<Object> resp = l.dispatch(new ConnectEvent(client, true), worker);
+        Future<Object> resp = l.dispatch(state, new ConnectEvent(client, true), worker);
 
         assertTrue("disconnecting", meta.disconnecting);
         assertTrue("dispatch response is success", resp.isSuccess());
@@ -87,10 +91,12 @@ public class RocketListenerBuilderTest {
 
     @Test
     public void testScanReceive() throws Exception {
-        Listener l = b.build(new WithReceive()).collect(MoreCollectors.uniq());
+        WithReceive state = new WithReceive();
+
+        Listener l = b.build(state).collect(MoreCollectors.uniq());
         Events.ComponentWiseEventMetadata meta = (Events.ComponentWiseEventMetadata) l.getHandledEvent();
 
-        Future<Object> resp = l.dispatch(new ReceiveEvent(client, "foobar"), worker);
+        Future<Object> resp = l.dispatch(state, new ReceiveEvent(client, "foobar"), worker);
 
         assertThat("component class", meta.componentClass, equalTo(String.class));
         assertTrue("dispatch response is success", resp.isSuccess());
@@ -98,10 +104,12 @@ public class RocketListenerBuilderTest {
 
     @Test
     public void testScanSupervise() throws Exception {
-        Listener l = b.build(new WithSupervise()).collect(MoreCollectors.uniq());
+        WithSupervise state = new WithSupervise();
+
+        Listener l = b.build(state).collect(MoreCollectors.uniq());
         Events.ComponentWiseEventMetadata meta = (Events.ComponentWiseEventMetadata) l.getHandledEvent();
 
-        Future<Object> resp = l.dispatch(new SuperviseEvent(client, new NullPointerException()), worker);
+        Future<Object> resp = l.dispatch(state, new SuperviseEvent(client, new NullPointerException()), worker);
 
         assertThat("component class", meta.componentClass, equalTo(NullPointerException.class));
         assertTrue("dispatch response is success", resp.isSuccess());
@@ -116,18 +124,20 @@ public class RocketListenerBuilderTest {
 
     @Test
     public void testScanValidatedFailure() throws Exception {
+        WithValidation state = new WithValidation();
+
         @SuppressWarnings("unchecked")
         MutProp<Object> prop = mock(MutProp.class);
         PropId pid = PropIds.type(String.class);
         when(client.getProp(pid)).thenReturn(prop);
         when(prop.isDefined()).thenReturn(false);
 
-        Object[] tmp = b.build(new WithValidation()).toArray();
+        Object[] tmp = b.build(state).toArray();
         Listener hard = (Listener) tmp[0];
         Listener soft = (Listener) tmp[1];
 
-        Future<Object> hardResp = hard.dispatch(new ReceiveEvent(client, "foo"), worker);
-        Future<Object> softResp = soft.dispatch(new ReceiveEvent(client, "bar"), worker);
+        Future<Object> hardResp = hard.dispatch(state, new ReceiveEvent(client, "foo"), worker);
+        Future<Object> softResp = soft.dispatch(state, new ReceiveEvent(client, "bar"), worker);
 
         assertTrue("hard response is failure", hardResp.isFailure());
         assertTrue("soft response is success", softResp.isSuccess());
@@ -135,18 +145,20 @@ public class RocketListenerBuilderTest {
 
     @Test
     public void testScanValidatedSuccess() throws Exception {
+        WithValidation state = new WithValidation();
+
         @SuppressWarnings("unchecked")
         MutProp<Object> prop = mock(MutProp.class);
         PropId pid = PropIds.type(String.class);
         when(client.getProp(pid)).thenReturn(prop);
         when(prop.isDefined()).thenReturn(true);
 
-        Object[] tmp = b.build(new WithValidation()).toArray();
+        Object[] tmp = b.build(state).toArray();
         Listener hard = (Listener) tmp[0];
         Listener soft = (Listener) tmp[1];
 
-        Future<Object> hardResp = hard.dispatch(new ReceiveEvent(client, "foo"), worker);
-        Future<Object> softResp = soft.dispatch(new ReceiveEvent(client, "bar"), worker);
+        Future<Object> hardResp = hard.dispatch(state, new ReceiveEvent(client, "foo"), worker);
+        Future<Object> softResp = soft.dispatch(state, new ReceiveEvent(client, "bar"), worker);
 
         assertTrue("hard response is failure", hardResp.isSuccess());
         assertTrue("soft response is success", softResp.isSuccess());
