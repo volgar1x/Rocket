@@ -7,6 +7,7 @@ import org.fungsi.concurrent.Worker;
 import org.fungsi.concurrent.Workers;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.InOrder;
 import org.rocket.MoreCollectors;
 import org.rocket.network.*;
 import org.rocket.network.event.ConnectEvent;
@@ -18,8 +19,7 @@ import org.rocket.network.props.PropValidations;
 
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.*;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 public class RocketListenerBuilderTest {
 
@@ -124,7 +124,7 @@ public class RocketListenerBuilderTest {
 
     @Test
     public void testScanValidatedFailure() throws Exception {
-        WithValidation state = new WithValidation();
+        WithValidation state = spy(new WithValidation());
 
         @SuppressWarnings("unchecked")
         MutProp<Object> prop = mock(MutProp.class);
@@ -141,11 +141,14 @@ public class RocketListenerBuilderTest {
 
         assertTrue("hard response is failure", hardResp.isFailure());
         assertTrue("soft response is success", softResp.isSuccess());
+
+        InOrder o = inOrder(state);
+        o.verifyNoMoreInteractions();
     }
 
     @Test
     public void testScanValidatedSuccess() throws Exception {
-        WithValidation state = new WithValidation();
+        WithValidation state = spy(new WithValidation());
 
         @SuppressWarnings("unchecked")
         MutProp<Object> prop = mock(MutProp.class);
@@ -162,5 +165,10 @@ public class RocketListenerBuilderTest {
 
         assertTrue("hard response is failure", hardResp.isSuccess());
         assertTrue("soft response is success", softResp.isSuccess());
+
+        InOrder o = inOrder(state);
+        o.verify(state).hard("foo");
+        o.verify(state).soft("bar");
+        o.verifyNoMoreInteractions();
     }
 }
