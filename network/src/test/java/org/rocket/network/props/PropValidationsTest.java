@@ -100,7 +100,7 @@ public class PropValidationsTest {
         o.verifyNoMoreInteractions();
     }
 
-    @Test(expected = AssertionError.class)
+    @Test(expected = PropValidationException.class)
     public void testValidateFailure() throws Exception {
         // given
         NetworkClient client = mock(NetworkClient.class);
@@ -119,7 +119,7 @@ public class PropValidationsTest {
         when(client.getProp(PropIds.type(String.class))).thenReturn(strProp);
         when(client.getProp(PropIds.type(Integer.class))).thenReturn(intProp);
 
-        validator.validate(client);
+        validator.hardValidate(client);
 
         // then
         fail();
