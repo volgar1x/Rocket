@@ -6,6 +6,7 @@ import org.fungsi.concurrent.Future;
 import org.fungsi.concurrent.Futures;
 import org.fungsi.concurrent.Worker;
 import org.rocket.network.*;
+import org.rocket.network.event.ConnectEvent;
 import org.rocket.network.event.NetworkEvent;
 import org.rocket.network.event.ReceiveEvent;
 import org.rocket.network.event.SuperviseEvent;
@@ -42,12 +43,12 @@ final class RocketListenerBuilder extends JavaListenerBuilder {
             }
 
             boolean disconnecting = method.isAnnotationPresent(Disconnect.class);
-            EventMetadata metadata = new Events.ConnectEventMetadata(disconnecting);
-            Listener listener = new ConnectEventListener(metadata, method);
+            TypedEventMetadata<ConnectEvent> metadata = new Events.ConnectEventMetadata(disconnecting);
+            ConnectEventListener connectlistener = new ConnectEventListener(metadata, method);
 
             // @Connect we don't want to crash a freshly created connection, soft validation then
             // @Disconnect the connection is gone, does it really matter if a hard validation fails? (hint: no)
-            listener = wrapValidationIfNeeded(listener, method, false);
+            Listener listener = wrapValidationIfNeeded(connectlistener, false);
 
             return Stream.of(listener);
         } else if (method.isAnnotationPresent(Receive.class)) {
@@ -59,12 +60,12 @@ final class RocketListenerBuilder extends JavaListenerBuilder {
 
             Class<?> messageClass = method.getParameterTypes()[0];
             TypedEventMetadata<ReceiveEvent> metadata = new Events.ComponentWiseEventMetadata<>(messageClass);
-            Listener listener = new ReceiveEventListener(metadata, method);
+            ReceiveEventListener receivelistener = new ReceiveEventListener(metadata, method);
 
             // @Receive may or may not want hard validation
             // it will hard validate by default, and that's the recommended setting
             // but sometimes one may want a soft validation instead
-            listener = wrapValidationIfNeeded(listener, method, !annotation.softValidation());
+            Listener listener = wrapValidationIfNeeded(receivelistener, !annotation.softValidation());
 
             return Stream.of(listener);
         } else if (method.isAnnotationPresent(Supervise.class)) {
@@ -75,19 +76,19 @@ final class RocketListenerBuilder extends JavaListenerBuilder {
 
             Class<?> exceptionClass = method.getParameterTypes()[0];
             TypedEventMetadata<SuperviseEvent> metadata = new Events.ComponentWiseEventMetadata<>(exceptionClass);
-            Listener listener = new SuperviseEventListener(metadata, method);
+            SuperviseEventListener superviselistener = new SuperviseEventListener(metadata, method);
 
             // @Supervise is the last shot to make things work
             // we do not want hard validations that might get things even worse
-            listener = wrapValidationIfNeeded(listener, method, false);
+            Listener listener = wrapValidationIfNeeded(superviselistener, false);
 
             return Stream.of(listener);
         }
         return Stream.empty();
     }
 
-    Listener wrapValidationIfNeeded(Listener listener, Method method, boolean hard) {
-        List<PropValidator> validators = PropValidations.fetchValidators(method, validationInstantator);
+    Listener wrapValidationIfNeeded(JavaListener<?> listener, boolean hard) {
+        List<PropValidator> validators = PropValidations.fetchValidators(listener.getBehavior(), validationInstantator);
         if (validators.isEmpty()) {
             return listener;
         }
@@ -97,23 +98,14 @@ final class RocketListenerBuilder extends JavaListenerBuilder {
                     : new SoftValidator(listener, validator);
     }
 
-    static final class ConnectEventListener extends Listener {
-        final EventMetadata metadata;
-        final Method behavior;
-
-        ConnectEventListener(EventMetadata metadata, Method behavior) {
-            this.metadata = metadata;
-            this.behavior = behavior;
+    static final class ConnectEventListener extends JavaListener<ConnectEvent> {
+        ConnectEventListener(TypedEventMetadata<ConnectEvent> signature, Method behavior) {
+            super(signature, behavior);
         }
 
         @Override
-        public EventMetadata getHandledEvent() {
-            return metadata;
-        }
-
-        @Override
-        public Future<Object> dispatch(Object state, Object event, Worker worker) {
-            return worker.submit(() -> behavior.invoke(state));
+        protected Object invoke(Object state, Method behavior, ConnectEvent event) throws Throwable {
+            return behavior.invoke(state);
         }
     }
 

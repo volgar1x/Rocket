@@ -1,12 +1,12 @@
 package org.rocket.network.acara;
 
-import com.github.blackrush.acara.EventMetadata;
 import com.github.blackrush.acara.TypedEventMetadata;
+import org.rocket.network.event.ConnectEvent;
 
 final class Events {
     private Events() {}
 
-    static final class ConnectEventMetadata extends EventMetadata {
+    static final class ConnectEventMetadata extends TypedEventMetadata<ConnectEvent> {
         final boolean disconnecting;
 
         ConnectEventMetadata(boolean disconnecting) {
@@ -14,7 +14,7 @@ final class Events {
         }
 
         @Override
-        public EventMetadata getParent() {
+        public TypedEventMetadata<ConnectEvent> getParent() {
             return null;
         }
 
