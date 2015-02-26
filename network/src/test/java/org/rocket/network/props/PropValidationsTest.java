@@ -11,11 +11,14 @@ import org.rocket.network.*;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.reflect.AnnotatedElement;
+import java.lang.reflect.Method;
 import java.util.List;
 import java.util.NoSuchElementException;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.*;
 
@@ -29,6 +32,9 @@ public class PropValidationsTest {
     @FooBar
     @PropPresence(Integer.class)
     private static void annotated() {}
+
+    @PropPresence(value = String.class, presence = false)
+    private static void notPresent() {}
 
     private static final class BadValidator implements PropValidator {
         public BadValidator(String yo, String lo) {}
@@ -129,5 +135,24 @@ public class PropValidationsTest {
         } catch (Exception e) {
             fail();
         }
+    }
+
+    @Test
+    public void testPresenceInversion() throws Exception {
+        @SuppressWarnings("unchecked")
+        MutProp<Object> prop = mock(MutProp.class);
+        NetworkClient client = mock(NetworkClient.class);
+
+        Method target = PropValidationsTest.class.getDeclaredMethod("notPresent");
+
+        when(client.getProp(PropIds.type(String.class))).thenReturn(prop);
+        when(prop.isDefined()).thenReturn(false);
+
+        List<PropValidator> validators = PropValidations.fetchValidators(target, instantiator);
+        PropValidator first = validators.get(0);
+        Either<Unit, Throwable> result = first.validate(client);
+
+        assertEquals("returned validators number", 1, validators.size());
+        assertTrue("result is a success", result.isLeft());
     }
 }

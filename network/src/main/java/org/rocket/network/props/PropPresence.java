@@ -12,4 +12,5 @@ import java.lang.annotation.Target;
 @PropValidate(PropPresenceValidator.class)
 public @interface PropPresence {
     Class<?> value();
+    boolean presence() default true;
 }
