@@ -65,7 +65,7 @@ public class RocketListenerBuilderTest {
 
     @Test
     public void testScanConnect() throws Exception {
-        WithConnect state = new WithConnect();
+        WithConnect state = spy(new WithConnect());
 
         Listener l = b.build(state).collect(MoreCollectors.uniq());
         Events.ConnectEventMetadata meta = (Events.ConnectEventMetadata) l.getHandledEvent();
@@ -74,11 +74,15 @@ public class RocketListenerBuilderTest {
 
         assertFalse("disconnecting", meta.disconnecting);
         assertTrue("dispatch response is success", resp.isSuccess());
+
+        InOrder o = inOrder(state);
+        o.verify(state).method();
+        o.verifyNoMoreInteractions();
     }
 
     @Test
     public void testScanDisconnect() throws Exception {
-        WithDisconnect state = new WithDisconnect();
+        WithDisconnect state = spy(new WithDisconnect());
 
         Listener l = b.build(state).collect(MoreCollectors.uniq());
         Events.ConnectEventMetadata meta = (Events.ConnectEventMetadata) l.getHandledEvent();
@@ -87,11 +91,15 @@ public class RocketListenerBuilderTest {
 
         assertTrue("disconnecting", meta.disconnecting);
         assertTrue("dispatch response is success", resp.isSuccess());
+
+        InOrder o = inOrder(state);
+        o.verify(state).method();
+        o.verifyNoMoreInteractions();
     }
 
     @Test
     public void testScanReceive() throws Exception {
-        WithReceive state = new WithReceive();
+        WithReceive state = spy(new WithReceive());
 
         Listener l = b.build(state).collect(MoreCollectors.uniq());
         Events.ComponentWiseEventMetadata meta = (Events.ComponentWiseEventMetadata) l.getHandledEvent();
@@ -100,11 +108,15 @@ public class RocketListenerBuilderTest {
 
         assertThat("component class", meta.componentClass, equalTo(String.class));
         assertTrue("dispatch response is success", resp.isSuccess());
+
+        InOrder o = inOrder(state);
+        o.verify(state).method("foobar");
+        o.verifyNoMoreInteractions();
     }
 
     @Test
     public void testScanSupervise() throws Exception {
-        WithSupervise state = new WithSupervise();
+        WithSupervise state = spy(new WithSupervise());
 
         Listener l = b.build(state).collect(MoreCollectors.uniq());
         Events.ComponentWiseEventMetadata meta = (Events.ComponentWiseEventMetadata) l.getHandledEvent();
@@ -113,6 +125,10 @@ public class RocketListenerBuilderTest {
 
         assertThat("component class", meta.componentClass, equalTo(NullPointerException.class));
         assertTrue("dispatch response is success", resp.isSuccess());
+
+        InOrder o = inOrder(state);
+        o.verify(state).method(any(NullPointerException.class));
+        o.verifyNoMoreInteractions();
     }
 
     @Test
