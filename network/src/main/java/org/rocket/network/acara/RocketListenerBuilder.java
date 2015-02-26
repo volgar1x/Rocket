@@ -17,6 +17,7 @@ import org.slf4j.LoggerFactory;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
 
@@ -88,7 +89,14 @@ final class RocketListenerBuilder extends JavaListenerBuilder {
     }
 
     Listener wrapValidationIfNeeded(JavaListener<?> listener, boolean hard) {
-        List<PropValidator> validators = PropValidations.fetchValidators(listener.getBehavior(), validationInstantator);
+        List<PropValidator> validators = new ArrayList<>();
+
+        List<PropValidator> onClass = PropValidations.fetchValidators(listener.getBehavior().getDeclaringClass(), validationInstantator);
+        validators.addAll(onClass);
+
+        List<PropValidator> onMethod = PropValidations.fetchValidators(listener.getBehavior(), validationInstantator);
+        validators.addAll(onMethod);
+
         if (validators.isEmpty()) {
             return listener;
         }
