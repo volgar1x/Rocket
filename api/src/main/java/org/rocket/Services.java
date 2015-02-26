@@ -37,10 +37,10 @@ public final class Services {
 
     static Graph newGraphInternal(Set<Service> services) {
         // for test only
-        List<Service> newServices = new LinkedList<>(services);
+        Deque<Service> stack = new LinkedList<>(services);
         Graph graph = root();
-        populateGraph(graph, newServices);
-        if (!newServices.isEmpty()) {
+        populateGraph(graph, stack);
+        if (!stack.isEmpty()) {
             throw new IllegalArgumentException();
         }
         return graph;
@@ -54,18 +54,20 @@ public final class Services {
         return new Graph(parent, item, new HashSet<>());
     }
 
-    static void populateGraph(Graph parent, List<Service> services) {
-        for (ListIterator<Service> it = services.listIterator(); it.hasNext(); ) {
-            Service service = it.next();
+    static void populateGraph(Graph parent, Deque<Service> stack) {
+        int maxIterations = stack.size();
+        while (!stack.isEmpty() && maxIterations > 0) {
+            Service service = stack.removeFirst();
+            maxIterations--;
 
-            if (parent.accepts(service)) {
-                it.remove();
-
-                Graph graph = graph(parent, service);
-                populateGraph(graph, services);
-
-                parent.children.add(graph);
+            if (!parent.accepts(service)) {
+                stack.addLast(service);
+                continue;
             }
+
+            Graph graph = graph(parent, service);
+            populateGraph(graph, stack);
+            parent.children.add(graph);
         }
     }
 
