@@ -1,6 +1,6 @@
 allprojects {
 	group = 'org.rocket'
-    version = '1.2-SNAPSHOT'
+    version = '1.2-alpha5'
 }
 
 subprojects {
