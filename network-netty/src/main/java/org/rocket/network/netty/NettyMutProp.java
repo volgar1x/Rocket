@@ -8,11 +8,15 @@ import org.rocket.network.NetworkClient;
 import org.rocket.network.Prop;
 import org.rocket.network.PropId;
 
+import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 
 final class NettyMutProp<T> implements MutProp<T> {
+    private static final Map<PropId, AttributeKey<?>> CACHE = new ConcurrentHashMap<>();
+    @SuppressWarnings("unchecked")
     public static <T> AttributeKey<T> asAttributeKey(PropId pid) {
-        return AttributeKey.valueOf(pid.toString());
+        return (AttributeKey) CACHE.computeIfAbsent(pid, x -> AttributeKey.valueOf(x.toString()));
     }
 
     final PropId id;
