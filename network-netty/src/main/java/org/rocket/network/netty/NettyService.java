@@ -152,8 +152,8 @@ final class NettyService extends ChannelInboundHandlerAdapter implements Network
         Subscription subscription = ctx.channel().attr(RocketNetty.SUBSCRIPTION_KEY).getAndRemove();
         clients.remove(client);
 
-        client.getEventBus().publish(new ConnectEvent(client, true));
-        subscription.revoke();
+        client.getEventBus().publish(new ConnectEvent(client, true))
+                .onSuccess(o -> subscription.revoke());
     }
 
     @Override
