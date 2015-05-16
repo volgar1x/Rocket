@@ -1,8 +1,13 @@
 apply plugin: 'maven'
 
 repositories {
-    mavenCentral()
-    jcenter()
+    maven {
+        url archivaSubInternal
+        credentials {
+            username archivaSubUsername
+            password archivaSubPassword
+        }
+    }
 }
 
 task sourcesJar(type: Jar, dependsOn: classes) {
